@@ -3,13 +3,14 @@
 import "dotenv/config";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { PrismaClient } from "../generated/prisma/client.mts";
+import { databaseUrl } from "./database-url.mjs";
 import { users } from "./seed-data/users.mjs";
 import { courses } from "./seed-data/courses.mjs";
 import { logs } from "./seed-data/logs.mjs";
 import { mediaItems } from "./seed-data/media.mjs";
 
 const prisma = new PrismaClient({
-  adapter: new PrismaBetterSqlite3({ url: process.env.DATABASE_URL }),
+  adapter: new PrismaBetterSqlite3({ url: databaseUrl }),
 });
 
 async function main() {

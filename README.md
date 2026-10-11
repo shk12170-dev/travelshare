@@ -21,7 +21,6 @@ Node.js 20 이상이 필요합니다.
 
 ```bash
 npm ci                      # 패키지 설치 (Prisma 클라이언트도 자동 생성)
-cp .env.example .env        # 환경 변수 파일 만들기 (PowerShell: Copy-Item .env.example .env)
 npm run db:deploy           # DB 파일 생성과 테이블 적용
 npm run db:seed             # 샘플 데이터 입력
 npm run dev
