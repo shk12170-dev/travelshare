@@ -11,8 +11,7 @@ import { mediaItems } from "./seed-data/media.mjs";
 // 데모 계정의 비밀번호는 저장소에 공개되어 있으므로 실제 서비스(원격) DB에는 넣지 않음
 if (process.env.TURSO_DATABASE_URL && process.env.ALLOW_DEMO_SEED !== "1") {
   console.error(
-    "원격 DB(Turso)에는 데모 데이터를 넣을 수 없습니다. 비밀번호가 공개된 데모 계정이 만들어지기 때문입니다.
-" +
+    "원격 DB(Turso)에는 데모 데이터를 넣을 수 없습니다. 비밀번호가 공개된 데모 계정이 만들어지기 때문입니다.\n" +
       "코스 데이터만 넣으려면: npm run db:seed:courses",
   );
   process.exit(1);
