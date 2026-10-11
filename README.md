@@ -1,36 +1,41 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# travelshare
 
-## Getting Started
+혼자·친구·연인·가족과 떠나는 여행을 위한 반응형 여행 공유 웹앱입니다.
 
-First, run the development server:
+- 사진·영상(숏츠) 게시
+- 동행 유형 × 테마별 여행 코스 추천
+- 여행 로그와 팁 공유
+
+현재는 샘플 데이터로 동작하는 프로토타입입니다. 진행 상황과 단계별 계획은 [작업계획.md](작업계획.md)를 참고하세요.
+
+## 기술 스택
+
+- Next.js 16 (App Router), React 19
+- Tailwind CSS 4
+- ESLint 9
+
+## 시작하기
+
+Node.js 20 이상이 필요합니다.
 
 ```bash
+npm ci
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+| 명령 | 설명 |
+|------|------|
+| `npm run dev` | 개발 서버 |
+| `npm run build` | 프로덕션 빌드 |
+| `npm run lint` | 코드 검사 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 폴더 구조
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```
+app/          화면(라우트): /, /course, /course/[id], /media, /log, /log/[id], /log/new, /profile
+components/   공통 컴포넌트
+data/         샘플 데이터 (5단계에서 DB로 교체 예정)
+public/       정적 파일
+```
