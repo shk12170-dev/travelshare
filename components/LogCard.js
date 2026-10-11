@@ -6,7 +6,7 @@ export default function LogCard({ log }) {
   return (
     <Link
       href={`/log/${log.id}`}
-      className="group flex gap-4 rounded-2xl border border-border bg-surface p-3 transition-shadow hover:shadow-lg"
+      className="group flex min-w-0 gap-4 rounded-2xl border border-border bg-surface p-3 transition-shadow hover:shadow-lg"
     >
       <div className={`h-24 w-24 shrink-0 rounded-xl bg-linear-to-br ${log.cover}`} />
       <div className="flex min-w-0 flex-col gap-1">

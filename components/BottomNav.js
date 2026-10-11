@@ -9,7 +9,7 @@ export default function BottomNav() {
 
   return (
     <nav className="fixed inset-x-0 bottom-0 z-20 border-t border-border bg-surface md:hidden">
-      <ul className="grid grid-cols-3">
+      <ul className="grid grid-cols-5">
         {navItems.map((item) => {
           const active = isActive(pathname, item.href);
           return (
