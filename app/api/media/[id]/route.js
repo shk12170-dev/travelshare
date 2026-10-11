@@ -14,7 +14,10 @@ export async function DELETE(request, { params }) {
     return Response.json({ errors: ["본인이 올린 미디어만 삭제할 수 있습니다."] }, { status: 403 });
   }
 
-  await prisma.mediaItem.delete({ where: { id } });
+  await prisma.$transaction([
+    prisma.like.deleteMany({ where: { targetType: "media", targetId: id } }),
+    prisma.mediaItem.delete({ where: { id } }),
+  ]);
   if (item.fileName) await removeUpload(item.fileName);
   return new Response(null, { status: 204 });
 }

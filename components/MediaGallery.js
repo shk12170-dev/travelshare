@@ -4,11 +4,12 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Chip from "./Chip";
 import MediaThumb from "./MediaThumb";
+import LikeButton from "./LikeButton";
 import { mediaTypes, labelOf } from "@/data/options";
 
 const typeIcon = { photo: "🖼️", video: "🎬", shorts: "⚡" };
 
-export default function MediaGallery({ items, currentUserId }) {
+export default function MediaGallery({ items, currentUserId, likedIds = [] }) {
   const router = useRouter();
   const [type, setType] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
@@ -81,9 +82,19 @@ export default function MediaGallery({ items, currentUserId }) {
               )}
               <div className="pointer-events-none relative bg-linear-to-t from-black/60 to-transparent p-3 pt-8">
                 <p className="text-sm font-semibold leading-snug">{item.caption}</p>
-                <p className="mt-0.5 text-xs text-white/85">
-                  {item.region} · {item.author} · ♥ {item.likes}
+                <p className="mt-0.5 pr-14 text-xs text-white/85">
+                  {item.region} · {item.author}
                 </p>
+              </div>
+              <div className="absolute bottom-2.5 right-2.5 z-10">
+                <LikeButton
+                  targetType="media"
+                  targetId={item.id}
+                  initialLiked={likedIds.includes(item.id)}
+                  initialCount={item.likes}
+                  loggedIn={Boolean(currentUserId)}
+                  variant="overlay"
+                />
               </div>
             </li>
           ))}

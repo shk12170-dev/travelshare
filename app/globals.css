@@ -1,12 +1,15 @@
 @import "tailwindcss";
 
+/* 테스트 코드의 문자열이 스타일로 만들어지지 않도록 검사 대상에서 제외 */
+@source not "../tests";
+
 :root {
   --background: #f8fafc;
   --foreground: #0f172a;
   --surface: #ffffff;
   --muted: #64748b;
   --border: #e2e8f0;
-  --brand: #0d9488;
+  --brand: #0f766e; /* 흰 글자와 대비 4.5:1 이상 */
   --brand-soft: #ccfbf1;
 }
 
@@ -32,6 +35,12 @@
     --brand: #2dd4bf;
     --brand-soft: #134e4a;
   }
+}
+
+/* 키보드로 이동할 때 현재 위치가 잘 보이도록 */
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
 }
 
 body {

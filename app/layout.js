@@ -31,8 +31,15 @@ export default async function RootLayout({ children }) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        {/* 키보드 사용자가 메뉴를 건너뛰고 본문으로 바로 이동 */}
+        <a
+          href="#main"
+          className="sr-only z-50 rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white focus:not-sr-only focus:fixed focus:left-4 focus:top-3"
+        >
+          본문으로 건너뛰기
+        </a>
         <Header user={user} />
-        <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 md:pb-12">
+        <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 outline-none md:pb-12">
           {children}
         </main>
         <BottomNav />

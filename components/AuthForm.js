@@ -75,6 +75,12 @@ export default function AuthForm({ mode, next }) {
         {pending ? "처리 중..." : isSignup ? "가입하기" : "로그인"}
       </button>
 
+      {!isSignup && (
+        <Link href="/forgot-password" className="text-center text-sm text-muted underline-offset-2 hover:underline">
+          비밀번호를 잊으셨나요?
+        </Link>
+      )}
+
       <p className="text-center text-sm text-muted">
         {isSignup ? "이미 계정이 있나요? " : "아직 계정이 없나요? "}
         <Link href={`${isSignup ? "/login" : "/signup"}${query}`} className="font-semibold text-brand">

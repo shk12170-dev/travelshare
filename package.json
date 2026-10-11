@@ -11,7 +11,9 @@
     "db:deploy": "prisma migrate deploy",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "test": "vitest run",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@prisma/adapter-better-sqlite3": "7.10.0",
@@ -23,12 +25,15 @@
     "server-only": "^0.0.1"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.64.0",
     "@tailwindcss/postcss": "^4",
     "dotenv": "^18.0.7",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.3.8",
     "prisma": "7.10.0",
-    "tailwindcss": "^4"
+    "tailwindcss": "^4",
+    "vitest": "5.0.3"
   },
   "allowScripts": {
     "better-sqlite3@12.11.1": true,

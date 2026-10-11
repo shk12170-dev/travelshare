@@ -48,3 +48,7 @@ next-env.d.ts
 
 # 업로드된 미디어 파일
 /storage/
+
+# 테스트 결과
+/test-results/
+/playwright-report/

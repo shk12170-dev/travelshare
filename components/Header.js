@@ -16,11 +16,12 @@ export default function Header({ user }) {
           Travel<span className="text-brand">Share</span>
         </Link>
         {/* 데스크톱 메뉴. 모바일은 하단 탭(BottomNav)을 사용 */}
-        <nav className="hidden flex-1 justify-center gap-1 md:flex">
+        <nav aria-label="주요 메뉴" className="hidden flex-1 justify-center gap-1 md:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive(pathname, item.href) ? "page" : undefined}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                 isActive(pathname, item.href)
                   ? "bg-brand-soft text-brand"
@@ -31,25 +32,39 @@ export default function Header({ user }) {
             </Link>
           ))}
         </nav>
-        {user ? (
-          <div className="flex items-center gap-2 text-sm">
-            <Link href="/profile" className="max-w-32 truncate font-medium">
-              {user.nickname}
-            </Link>
-            <form action={signOut}>
-              <button type="submit" className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:text-foreground">
-                로그아웃
-              </button>
-            </form>
-          </div>
-        ) : (
+        <div className="flex items-center gap-2">
           <Link
-            href={loginHref}
-            className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white dark:text-slate-900"
+            href="/search"
+            aria-label="검색"
+            className={`flex h-8 w-8 items-center justify-center rounded-full text-base hover:bg-brand-soft ${
+              pathname === "/search" ? "bg-brand-soft" : ""
+            }`}
           >
-            로그인
+            <span aria-hidden>🔍</span>
           </Link>
-        )}
+          {user ? (
+            <div className="flex items-center gap-2 text-sm">
+              <Link href="/profile" className="max-w-28 truncate font-medium">
+                {user.nickname}
+              </Link>
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:text-foreground"
+                >
+                  로그아웃
+                </button>
+              </form>
+            </div>
+          ) : (
+            <Link
+              href={loginHref}
+              className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white dark:text-slate-900"
+            >
+              로그인
+            </Link>
+          )}
+        </div>
       </div>
     </header>
   );

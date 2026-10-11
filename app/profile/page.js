@@ -1,8 +1,9 @@
 import Link from "next/link";
 import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
+import CourseCard from "@/components/CourseCard";
 import MediaThumb from "@/components/MediaThumb";
-import { getLogs, getMediaItems, getUser } from "@/lib/queries";
+import { getLikedCourses, getLogs, getMediaItems, getUser } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { themes, labelOf } from "@/data/options";
 
@@ -12,27 +13,38 @@ export const metadata = {
   title: "프로필",
 };
 
-export default async function ProfilePage() {
+export default async function ProfilePage({ searchParams }) {
   const { id } = await requireUser("/profile");
-  const [user, myLogs, myMedia] = await Promise.all([
+  const { updated } = await searchParams;
+  const [user, myLogs, myMedia, likedCourses] = await Promise.all([
     getUser(id),
     getLogs({ authorId: id }),
     getMediaItems({ authorId: id }),
+    getLikedCourses(id),
   ]);
+  const favoriteThemes = Array.isArray(user.favoriteThemes) ? user.favoriteThemes : [];
   const totalLikes = [...myLogs, ...myMedia].reduce((sum, item) => sum + item.likes, 0);
 
   return (
     <div className="flex flex-col gap-8">
+      {updated && (
+        <p role="status" className="rounded-lg bg-brand-soft p-3 text-sm text-brand">
+          프로필을 저장했습니다.
+        </p>
+      )}
       <section className="flex flex-col items-center gap-4 rounded-3xl border border-border bg-surface p-6 text-center sm:flex-row sm:text-left">
         <div className={`h-20 w-20 shrink-0 rounded-full bg-linear-to-br ${user.avatar}`} />
         <div className="flex flex-1 flex-col gap-2">
           <h1 className="text-xl font-bold">{user.nickname}</h1>
-          <p className="text-sm text-muted">{user.bio}</p>
+          <p className="text-sm text-muted">{user.bio || "아직 소개가 없습니다."}</p>
           <div className="flex flex-wrap justify-center gap-1.5 sm:justify-start">
-            {user.favoriteThemes.map((id) => (
+            {favoriteThemes.map((id) => (
               <Tag key={id}>{labelOf(themes, id)}</Tag>
             ))}
           </div>
+          <Link href="/profile/edit" className="mt-1 self-center text-sm font-medium text-brand sm:self-start">
+            프로필 수정
+          </Link>
         </div>
         <dl className="grid grid-cols-3 gap-4 text-center">
           <Stat label="로그" value={myLogs.length} />
@@ -62,6 +74,21 @@ export default async function ProfilePage() {
       </section>
 
       <section>
+        <h2 className="mb-4 text-xl font-bold">찜한 코스</h2>
+        {likedCourses.length > 0 ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {likedCourses.map((course) => (
+              <CourseCard key={course.id} course={course} />
+            ))}
+          </div>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted">
+            코스 상세 화면에서 ♡를 누르면 여기에 모입니다.
+          </p>
+        )}
+      </section>
+
+      <section>
         <h2 className="mb-4 text-xl font-bold">내 미디어</h2>
         {myMedia.length > 0 ? (
           <ul className="grid grid-cols-3 gap-2">
@@ -70,7 +97,7 @@ export default async function ProfilePage() {
                 key={item.id}
                 className="relative flex aspect-square items-end overflow-hidden rounded-xl bg-slate-800 text-xs font-medium text-white"
               >
-                <MediaThumb item={item} />
+                <MediaThumb item={item} sizes="33vw" />
                 <span className="pointer-events-none relative w-full bg-linear-to-t from-black/60 to-transparent p-2 pt-6">
                   {item.caption}
                 </span>

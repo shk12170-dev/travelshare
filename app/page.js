@@ -12,7 +12,7 @@ export default async function Home() {
 
   return (
     <div className="flex flex-col gap-10">
-      <section className="rounded-3xl bg-linear-to-br from-teal-500 to-sky-600 px-6 py-10 text-white md:px-10 md:py-14">
+      <section className="rounded-3xl bg-linear-to-br from-teal-700 to-sky-700 px-6 py-10 text-white md:px-10 md:py-14">
         <h1 className="text-2xl font-bold leading-snug md:text-4xl">
           누구와 떠나든,
           <br />
@@ -24,7 +24,7 @@ export default async function Home() {
         <div className="mt-6 flex flex-wrap gap-3">
           <Link
             href="/course"
-            className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-teal-700"
+            className="rounded-full bg-white px-5 py-2.5 text-sm font-semibold text-teal-800"
           >
             코스 찾아보기
           </Link>

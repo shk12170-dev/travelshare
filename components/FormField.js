@@ -1,5 +1,5 @@
 export const inputClass =
-  "w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand";
+  "w-full rounded-xl border border-border bg-surface px-3 py-2.5 text-sm focus:border-brand";
 
 export default function FormField({ label, error, children }) {
   return (

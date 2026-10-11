@@ -98,6 +98,10 @@ export async function deleteLog(logId) {
   const { error } = await checkOwner(logId);
   if (error) return { errors: error };
 
-  await prisma.travelLog.delete({ where: { id: logId } });
+  // 댓글은 함께 삭제되고(Cascade), 좋아요 기록은 직접 정리
+  await prisma.$transaction([
+    prisma.like.deleteMany({ where: { targetType: "log", targetId: logId } }),
+    prisma.travelLog.delete({ where: { id: logId } }),
+  ]);
   redirect("/log");
 }

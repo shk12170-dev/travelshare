@@ -29,6 +29,8 @@ model User {
   media          MediaItem[]
   sessions       Session[]
   accounts       Account[]
+  comments       Comment[]
+  likes          Like[]
 }
 
 // 로그인 세션 (Better Auth)
@@ -120,6 +122,7 @@ model TravelLog {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
   courseId  String?
   course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  comments  Comment[]
 
   @@index([createdAt])
 }
@@ -143,4 +146,30 @@ model MediaItem {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+}
+
+// 여행 로그 댓글
+model Comment {
+  id        String    @id @default(cuid())
+  body      String
+  createdAt DateTime  @default(now())
+  logId     String
+  log       TravelLog @relation(fields: [logId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([logId, createdAt])
+}
+
+// 좋아요. 대상별 likes 숫자는 각 테이블의 likes 컬럼에 함께 반영
+model Like {
+  // course | log | media
+  targetType String
+  targetId   String
+  createdAt  DateTime @default(now())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, targetType, targetId])
+  @@index([targetType, targetId])
 }

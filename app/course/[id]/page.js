@@ -2,7 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
-import { getCourse, getLogs } from "@/lib/queries";
+import LikeButton from "@/components/LikeButton";
+import { getCurrentUser } from "@/lib/session";
+import { getCourse, getLikedIds, getLogs } from "@/lib/queries";
 import { companions, themes, labelOf } from "@/data/options";
 
 export const dynamic = "force-dynamic";
@@ -17,7 +19,8 @@ export default async function CourseDetailPage({ params }) {
   const course = await getCourse(id);
   if (!course) notFound();
 
-  const relatedLogs = await getLogs({ courseId: course.id });
+  const [relatedLogs, user] = await Promise.all([getLogs({ courseId: course.id }), getCurrentUser()]);
+  const liked = (await getLikedIds(user?.id, "course", [course.id])).has(course.id);
 
   return (
     <article className="flex flex-col gap-8">
@@ -25,15 +28,25 @@ export default async function CourseDetailPage({ params }) {
         ← 코스 목록
       </Link>
 
-      <header className={`rounded-3xl bg-linear-to-br p-6 text-white md:p-10 ${course.cover}`}>
+      {/* 밝은 배경색에서도 흰 글자가 잘 보이도록 어두운 막을 깖 */}
+      <header
+        className={`rounded-3xl bg-linear-to-br p-6 text-white shadow-[inset_0_0_0_100vmax_rgba(0,0,0,0.3)] md:p-10 ${course.cover}`}
+      >
         <p className="text-sm text-white/85">
-          {course.region} · {course.duration} · ♥ {course.likes}
+          {course.region} · {course.duration}
         </p>
         <h1 className="mt-2 text-2xl font-bold md:text-3xl">{course.title}</h1>
         <p className="mt-3 max-w-xl text-sm text-white/90 md:text-base">{course.summary}</p>
       </header>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <LikeButton
+          targetType="course"
+          targetId={course.id}
+          initialLiked={liked}
+          initialCount={course.likes}
+          loggedIn={Boolean(user)}
+        />
         {course.themes.map((t) => (
           <Tag key={t}>{labelOf(themes, t)}</Tag>
         ))}

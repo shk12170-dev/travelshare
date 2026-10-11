@@ -1,7 +1,7 @@
 import MediaGallery from "@/components/MediaGallery";
 import MediaUploader from "@/components/MediaUploader";
 import Link from "next/link";
-import { getMediaItems } from "@/lib/queries";
+import { getLikedIds, getMediaItems } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +12,7 @@ export const metadata = {
 
 export default async function MediaPage() {
   const [mediaItems, user] = await Promise.all([getMediaItems(), getCurrentUser()]);
+  const likedIds = await getLikedIds(user?.id, "media", mediaItems.map((item) => item.id));
 
   return (
     <div className="flex flex-col gap-6">
@@ -32,7 +33,7 @@ export default async function MediaPage() {
           </Link>
         </div>
       )}
-      <MediaGallery items={mediaItems} currentUserId={user?.id} />
+      <MediaGallery items={mediaItems} currentUserId={user?.id} likedIds={[...likedIds]} />
     </div>
   );
 }

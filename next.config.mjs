@@ -9,6 +9,13 @@ const nextConfig = {
   turbopack: {
     root: projectRoot,
   },
+  images: {
+    // 업로드한 사진만 크기 조절·WebP 변환 대상으로 허용 (쿼리 문자열 불가)
+    localPatterns: [{ pathname: "/api/media/**", search: "" }],
+    qualities: [75],
+    // 삭제한 사진이 오래 남지 않도록 원본 파일 캐시와 같은 1시간
+    minimumCacheTTL: 3600,
+  },
 };
 
 export default nextConfig;

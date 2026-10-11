@@ -2,9 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Tag from "@/components/Tag";
 import DeleteButton from "@/components/DeleteButton";
+import LikeButton from "@/components/LikeButton";
+import CommentSection from "@/components/CommentSection";
 import { deleteLog } from "@/app/log/actions";
 import { getCurrentUser } from "@/lib/session";
-import { getCourse, getLog } from "@/lib/queries";
+import { getCourse, getLikedIds, getLog } from "@/lib/queries";
 import { companions, labelOf } from "@/data/options";
 
 export const dynamic = "force-dynamic";
@@ -24,6 +26,7 @@ export default async function LogDetailPage({ params }) {
     getCurrentUser(),
   ]);
   const isOwner = user?.id === log.authorId;
+  const liked = (await getLikedIds(user?.id, "log", [log.id])).has(log.id);
 
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-6">
@@ -43,8 +46,16 @@ export default async function LogDetailPage({ params }) {
           <time dateTime={log.date}>{log.date}</time>
         </div>
         <h1 className="mt-3 text-2xl font-bold leading-snug md:text-3xl">{log.title}</h1>
-        {isOwner && (
-          <div className="mt-4 flex items-start justify-end gap-2">
+        <div className="mt-4 flex flex-wrap items-start justify-between gap-2">
+          <LikeButton
+            targetType="log"
+            targetId={log.id}
+            initialLiked={liked}
+            initialCount={log.likes}
+            loggedIn={Boolean(user)}
+          />
+          {isOwner && (
+          <div className="flex items-start gap-2">
             <Link
               href={`/log/${log.id}/edit`}
               className="rounded-full border border-border px-4 py-1.5 text-sm text-muted hover:text-foreground"
@@ -53,7 +64,8 @@ export default async function LogDetailPage({ params }) {
             </Link>
             <DeleteButton action={deleteLog.bind(null, log.id)} confirmMessage="이 로그를 삭제할까요? 되돌릴 수 없습니다." />
           </div>
-        )}
+          )}
+        </div>
       </header>
 
       <div className="flex flex-col gap-4 leading-7">
@@ -84,6 +96,8 @@ export default async function LogDetailPage({ params }) {
           <p className="mt-1 font-semibold text-brand">{course.title} →</p>
         </Link>
       )}
+
+      <CommentSection logId={log.id} logAuthorId={log.authorId} user={user} />
     </article>
   );
 }
