@@ -177,3 +177,10 @@ model Like {
   @@id([userId, targetType, targetId])
   @@index([targetType, targetId])
 }
+
+// 횟수 제한 기록 (서버가 여러 대로 나뉘어 돌아도 공유되도록 DB에 저장)
+model RateLimit {
+  key     String @id
+  count   Int
+  resetAt BigInt
+}

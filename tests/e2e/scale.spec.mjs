@@ -61,20 +61,73 @@ test("로그·미디어 목록은 페이지로 나뉜다", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(`${user.nickname}님의 여행 로그`);
 });
 
-test("업로드 API는 크기·형식·내용을 검사한다", async ({ page }) => {
+test("업로드는 허가 → 올리기 → 게시 단계마다 크기·형식·내용을 검사한다", async ({ page }) => {
   await signUp(page, newUser());
-  const query = new URLSearchParams({ caption: "검사용", region: "서울" }).toString();
   const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
-  const post = (type, data, q = query) => page.request.post(`/api/media?${q}`, { headers: { "Content-Type": type }, data });
+  const base = { caption: "검사용", region: "서울" };
+  const permit = (data) => page.request.post("/api/media", { data: { ...base, ...data } });
+  const upload = (url, type, data) => page.request.put(url, { headers: { "Content-Type": type }, data });
+  const MB = 1024 * 1024;
 
-  // 사진 한도(10MB) 초과
-  expect((await post("image/png", Buffer.concat([png, Buffer.alloc(10 * 1024 * 1024)]))).status()).toBe(413);
-  // 형식을 속인 파일
-  expect((await post("image/png", Buffer.from("<script>alert(1)</script>"))).status()).toBe(400);
-  // 허용하지 않는 형식
-  expect((await post("text/html", Buffer.from("<h1>x</h1>"))).status()).toBe(415);
-  // 설명 없음
-  expect((await post("image/png", png, new URLSearchParams({ region: "서울" }).toString())).status()).toBe(400);
-  // 정상
-  expect((await post("image/png", png)).status()).toBe(201);
+  // 1단계(허가): 형식·크기·입력값 검사
+  expect((await permit({ contentType: "image/png", size: 10 * MB + 1 })).status()).toBe(413);
+  expect((await permit({ contentType: "video/mp4", size: 50 * MB + 1 })).status()).toBe(413);
+  expect((await permit({ contentType: "text/html", size: 10 })).status()).toBe(415);
+  expect((await permit({ contentType: "image/svg+xml", size: 10 })).status()).toBe(415);
+  expect((await permit({ contentType: "image/png", size: 0 })).status()).toBe(400);
+  expect((await permit({ contentType: "image/png", size: 10, caption: "" })).status()).toBe(400);
+  expect((await permit({ contentType: "image/png", size: 10, region: "화성" })).status()).toBe(400);
+
+  // 2단계(올리기): 허가받은 형식과 다르면 거부, 내용이 형식과 다르면 거부
+  const ok = await permit({ contentType: "image/png", size: png.length });
+  expect(ok.status()).toBe(200);
+  const { token, upload: target } = await ok.json();
+  expect((await upload(target.url, "image/jpeg", png)).status()).toBe(415);
+
+  const fake = await (await permit({ contentType: "image/png", size: 25 })).json();
+  expect((await upload(fake.upload.url, "image/png", Buffer.from("<script>alert(1)</script>"))).status()).toBe(400);
+
+  const big = await (await permit({ contentType: "image/png", size: 100 })).json();
+  expect((await upload(big.upload.url, "image/png", Buffer.concat([png, Buffer.alloc(10 * MB)]))).status()).toBe(413);
+
+  // 올리기 전에 게시를 시도하면 거부 (파일이 없음)
+  const empty = await (await permit({ contentType: "image/png", size: png.length })).json();
+  expect((await page.request.put("/api/media", { data: { token: empty.token } })).status()).toBe(404);
+
+  // 허가증을 바꿔치기하면 거부
+  const [body, sig] = token.split(".");
+  const forged = JSON.parse(Buffer.from(body, "base64url").toString());
+  forged.caption = "바꿔치기";
+  const forgedToken = `${Buffer.from(JSON.stringify(forged)).toString("base64url")}.${sig}`;
+  expect((await page.request.put("/api/media", { data: { token: forgedToken } })).status()).toBe(403);
+
+  // 정상: 올리고 게시, 같은 허가증으로 다시 게시해도 중복 생성되지 않음
+  expect((await upload(target.url, "image/png", png)).status()).toBe(200);
+  const first = await page.request.put("/api/media", { data: { token } });
+  expect(first.status()).toBe(201);
+  const second = await page.request.put("/api/media", { data: { token } });
+  expect(second.status()).toBe(200);
+  expect((await second.json()).id).toBe((await first.json()).id);
+});
+
+test("다른 사용자의 업로드 허가증은 쓸 수 없다", async ({ browser }) => {
+  const owner = await browser.newContext();
+  const other = await browser.newContext();
+  const ownerPage = await owner.newPage();
+  const otherPage = await other.newPage();
+  await signUp(ownerPage, newUser());
+  await signUp(otherPage, newUser());
+
+  const permit = await ownerPage.request.post("/api/media", {
+    data: { caption: "남의 것", region: "서울", contentType: "image/png", size: 12 },
+  });
+  const { token, upload } = await permit.json();
+
+  const stolenUpload = await otherPage.request.put(upload.url, { headers: { "Content-Type": "image/png" }, data: Buffer.alloc(12) });
+  expect(stolenUpload.status()).toBe(403);
+  const stolenPublish = await otherPage.request.put("/api/media", { data: { token } });
+  expect(stolenPublish.status()).toBe(403);
+
+  await owner.close();
+  await other.close();
 });

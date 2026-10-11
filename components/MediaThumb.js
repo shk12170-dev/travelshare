@@ -1,8 +1,5 @@
-import Image from "next/image";
-
 // 미디어 한 칸의 배경: 업로드 파일이면 실제 사진·영상, 샘플이면 그라데이션
-// sizes: 화면 폭에 따른 표시 크기. 브라우저가 알맞은 크기의 이미지를 고르는 데 사용
-export default function MediaThumb({ item, sizes = "(min-width: 640px) 33vw, 50vw" }) {
+export default function MediaThumb({ item }) {
   if (!item.src) {
     return <div aria-hidden className={`absolute inset-0 bg-linear-to-br ${item.cover}`} />;
   }
@@ -19,15 +16,16 @@ export default function MediaThumb({ item, sizes = "(min-width: 640px) 33vw, 50v
       />
     );
   }
-  // GIF는 움직임이 사라지지 않도록 변환하지 않음
+  // next/image 대신 일반 img를 씀: 배포 환경(Vercel 무료 플랜)의 이미지 변환 월 한도를 쓰지 않고,
+  // 사진은 업로드할 때 이미 브라우저에서 줄여서 올라옴. 주소는 R2로 이동(302)되어 R2에서 바로 전송됨
   return (
-    <Image
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
       src={item.src}
       alt={item.caption}
-      fill
-      sizes={sizes}
-      unoptimized={item.mimeType === "image/gif"}
-      className="object-cover"
+      loading="lazy"
+      decoding="async"
+      className="absolute inset-0 h-full w-full object-cover"
     />
   );
 }

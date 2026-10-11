@@ -14,7 +14,8 @@
 
 - Next.js 16 (App Router), React 19
 - Tailwind CSS 4
-- Prisma 7 + SQLite (better-sqlite3)
+- Prisma 7 + SQLite(개발) / Turso(배포), libSQL 어댑터
+- Cloudflare R2(배포 시 사진·영상 저장), Vercel(호스팅)
 - Better Auth (이메일·비밀번호 로그인)
 - ESLint 9
 
@@ -51,11 +52,72 @@ npm run dev
 | `npm run db:deploy` | 기존 마이그레이션 적용 |
 | `npm run db:seed` | 샘플 데이터 입력 (여러 번 실행해도 안전) |
 | `npm run db:studio` | DB 내용을 브라우저에서 보기 |
-| `npm run db:backup` | DB·업로드 파일 백업 (서버가 켜져 있어도 안전) |
+| `npm run db:backup` | DB·업로드 파일 백업 (서버가 켜져 있어도 안전. Turso면 SQL로 내려받기) |
+| `npm run db:migrate:remote` | 마이그레이션을 Turso(또는 지정한 DB)에 적용 |
+| `npm run db:seed:courses` | 코스 데이터만 입력 (운영 DB용) |
+| `npm run check:services` | Turso·R2 연결 점검 |
 | `npm test` | 단위 테스트 (Vitest) |
 | `npm run test:e2e` | 브라우저 E2E·접근성 테스트 (Playwright). 먼저 `npm run build` 필요 |
 
-## 운영 시 알아 둘 것
+## 배포 (Vercel + Turso + Cloudflare R2, 무료 범위)
+
+서버리스 구조라 서버를 직접 관리하지 않습니다. 구성: **Vercel**(앱) + **Turso**(DB) + **Cloudflare R2**(사진·영상).
+계정 가입과 키 발급은 각 서비스에서 직접 해야 합니다.
+
+> **주의**: Vercel 무료(Hobby) 플랜은 **비상업적·개인 용도**만 허용합니다. 광고·결제 등 수익 활동을 하려면 유료 플랜이 필요합니다.
+> R2는 가입할 때 결제 수단 등록이 필요할 수 있습니다(무료 범위 안에서는 청구되지 않음).
+
+### 1. Turso 만들기
+1. https://turso.tech 가입 → 데이터베이스 생성 (위치는 도쿄 `aws-ap-northeast-1` 권장)
+2. 데이터베이스 주소(`libsql://...`)와 토큰(Create Token)을 복사해 `.env`에 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`으로 저장
+3. 테이블 만들기와 코스 데이터 넣기:
+   ```bash
+   npm run db:migrate:remote
+   npm run db:seed:courses
+   ```
+   (`npm run db:seed`는 비밀번호가 공개된 데모 계정을 만들기 때문에 원격 DB에서는 거부됩니다.)
+
+### 2. Cloudflare R2 만들기
+1. https://dash.cloudflare.com → R2 → 버킷 만들기 (이름 예: `travelshare-media`, 위치 힌트: 아시아 태평양)
+2. **API 토큰**: R2 → API 토큰 관리 → 권한 "객체 읽기 및 쓰기", 대상은 위 버킷만 → Access Key ID / Secret Access Key 복사
+3. `.env`에 `R2_ACCOUNT_ID`(대시보드 오른쪽 계정 ID), `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` 저장
+4. **CORS 설정** (브라우저에서 직접 올리려면 필요): 버킷 → 설정 → CORS 정책에 아래를 붙여넣고 `AllowedOrigins`를 실제 사이트 주소로 바꿉니다.
+   ```json
+   [
+     {
+       "AllowedOrigins": ["https://프로젝트이름.vercel.app", "http://localhost:3000"],
+       "AllowedMethods": ["PUT"],
+       "AllowedHeaders": ["content-type"],
+       "MaxAgeSeconds": 3600
+     }
+   ]
+   ```
+5. **임시 파일 자동 삭제** (권장): 버킷 → 설정 → 객체 수명 주기 규칙 → 접두사 `pending/` 객체를 1일 후 삭제.
+   (업로드만 하고 게시하지 않은 파일이 쌓이지 않게 합니다.)
+
+### 3. 연결 점검
+```bash
+npm run check:services
+```
+Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭제를 실제로 시험하고 문제가 있으면 해결 방법을 알려 줍니다.
+
+### 4. Vercel 배포
+1. https://vercel.com 가입 → GitHub 저장소(`travelshare`) 가져오기
+2. Environment Variables에 `.env`의 `TURSO_*`, `R2_*`와 아래 값을 추가
+   - `BETTER_AUTH_SECRET`: 32자 이상 무작위 값 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`)
+   - (선택) `RESEND_API_KEY`, `MAIL_FROM`, 소셜 로그인 키
+3. Deploy. 사이트 주소(`https://프로젝트이름.vercel.app`)는 자동으로 인식됩니다(`BETTER_AUTH_URL` 불필요).
+4. 배포된 주소를 R2의 CORS `AllowedOrigins`에 넣기
+5. 코드를 GitHub에 push하면 자동으로 다시 배포됩니다. DB 구조를 바꿨다면 push 전에 `npm run db:migrate:remote`를 먼저 실행하세요.
+
+### 운영 중 알아 둘 것
+- **백업**: `npm run db:backup`은 `.env`에 Turso가 설정돼 있으면 DB 전체를 SQL 파일로 내려받습니다(`backups/db/`). 사진·영상은 R2가 보관합니다.
+  Turso 무료 플랜의 복구 기능(하루 전까지)도 있지만 별도로 주기적으로 백업해 두세요.
+- **횟수 제한**은 DB에 기록되어 여러 서버가 나뉘어 돌아도 함께 적용됩니다. IP 확인에는 Vercel이 붙이는 `X-Forwarded-For`를 사용합니다.
+- **영상**은 변환 없이 원본 그대로 보여 주며 50MB까지입니다. 사진은 브라우저에서 긴 변 2048px로 줄여 올립니다(위치 정보도 제거됨).
+- **무료 한도**: R2 저장 10GB·읽기 월 1,000만 회, Turso 저장 5GB·읽기 월 5억 행, Vercel 전송 월 100GB. 한도에 가까워지면 각 대시보드에서 확인하세요.
+
+## 운영 시 알아 둘 것 (자체 서버로 운영하는 경우)
 
 - **백업**: `npm run db:backup`을 하루 한 번 자동 실행하세요. DB는 `backups/db/`에 최근 14개를 남기고,
   업로드 파일은 `backups/uploads/`에 새 파일만 복사합니다. 서버 디스크가 고장 나도 남도록 `BACKUP_DIR`을

@@ -14,11 +14,16 @@
     "postinstall": "prisma generate",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "db:backup": "node scripts/backup.mjs"
+    "db:backup": "node scripts/backup.mjs",
+    "db:migrate:remote": "node scripts/migrate.mjs",
+    "check:services": "node scripts/check-services.mjs",
+    "db:seed:courses": "node prisma/seed-courses.mjs"
   },
   "dependencies": {
-    "@prisma/adapter-better-sqlite3": "7.10.0",
+    "@libsql/client": "0.17.4",
+    "@prisma/adapter-libsql": "7.10.0",
     "@prisma/client": "7.10.0",
+    "aws4fetch": "1.0.20",
     "better-auth": "1.7.7",
     "next": "^16.3.8",
     "react": "^19.2.8",
@@ -40,5 +45,8 @@
     "better-sqlite3@12.11.1": true,
     "prisma@7.10.0": true,
     "@prisma/engines@7.10.0": true
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "12.11.1"
   }
 }

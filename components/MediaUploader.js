@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { regions } from "@/data/options";
+import { shrinkImage } from "@/lib/clientImage";
 import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/validation";
 
 const accept = Object.keys(allowedMimeTypes).join(",");
@@ -68,32 +69,54 @@ export default function MediaUploader() {
     if (!region) nextErrors.push("지역을 선택하세요.");
     if (nextErrors.length > 0) return setErrors(nextErrors);
 
-    // 파일을 하나씩 순서대로 보냄 (서버가 디스크에 바로 저장)
+    // 파일을 하나씩 순서대로 올림: 허가 받기 → 파일 올리기 → 게시 확인
     setUploading(true);
     setErrors([]);
-    const query = new URLSearchParams({ caption, region, videoType });
     const failed = [];
     let done = 0;
+
     for (const [index, p] of previews.entries()) {
       setProgress(`${index + 1}/${previews.length}`);
       try {
-        const res = await fetch(`/api/media?${query}`, {
+        const file = await shrinkImage(p.file);
+
+        const permit = await fetch("/api/media", {
           method: "POST",
-          headers: { "Content-Type": p.file.type },
-          body: p.file,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ caption, region, videoType, contentType: file.type, size: file.size }),
         });
-        if (res.ok) {
-          URL.revokeObjectURL(p.url);
-          done += 1;
+        const permitData = await permit.json().catch(() => ({}));
+        if (!permit.ok) {
+          failed.push({ preview: p, error: permitData.errors?.[0] ?? "업로드를 시작하지 못했습니다." });
+          // 횟수 제한에 걸리면 나머지도 실패하므로 중단
+          if (permit.status === 429) {
+            failed.push(...previews.slice(index + 1).map((rest) => ({ preview: rest, error: null })));
+            break;
+          }
           continue;
         }
-        const data = await res.json().catch(() => ({}));
-        failed.push({ preview: p, error: data.errors?.[0] ?? "업로드에 실패했습니다." });
-        // 횟수 제한에 걸리면 나머지도 실패하므로 중단
-        if (res.status === 429) {
-          failed.push(...previews.slice(index + 1).map((rest) => ({ preview: rest, error: null })));
-          break;
+
+        const { upload, token } = permitData;
+        const sent = await fetch(upload.url, { method: upload.method, headers: upload.headers, body: file });
+        if (!sent.ok) {
+          const data = await sent.json().catch(() => ({}));
+          failed.push({ preview: p, error: data.errors?.[0] ?? "파일을 올리지 못했습니다." });
+          continue;
         }
+
+        const published = await fetch("/api/media", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        });
+        if (!published.ok) {
+          const data = await published.json().catch(() => ({}));
+          failed.push({ preview: p, error: data.errors?.[0] ?? "게시하지 못했습니다." });
+          continue;
+        }
+
+        URL.revokeObjectURL(p.url);
+        done += 1;
       } catch {
         failed.push({ preview: p, error: "네트워크 문제로 업로드하지 못했습니다." });
       }

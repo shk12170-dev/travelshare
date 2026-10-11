@@ -4,16 +4,44 @@
     {
       "name": "travelshare-dev",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
       "port": 3000,
       "autoPort": true
     },
     {
       "name": "travelshare-prod",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "start", "--", "-p", "3100"],
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3100"
+      ],
       "port": 3100,
-      "env": { "BETTER_AUTH_URL": "http://localhost:3100" }
+      "env": {
+        "BETTER_AUTH_URL": "http://localhost:3100"
+      }
+    },
+    {
+      "name": "travelshare-verify",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3101"
+      ],
+      "port": 3101,
+      "env": {
+        "BETTER_AUTH_URL": "http://localhost:3101",
+        "DATABASE_URL": "file:./prisma/verify.db",
+        "UPLOAD_DIR": "storage/verify-uploads"
+      }
     }
   ]
 }

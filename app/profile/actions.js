@@ -24,7 +24,7 @@ export async function updateProfile(prevState, formData) {
   const errors = validateProfile(values);
   if (Object.keys(errors).length > 0) return { errors, values };
 
-  const limit = hit("profileUpdate", user.id);
+  const limit = await hit("profileUpdate", user.id);
   if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
 
   const nickname = values.nickname.trim();
@@ -51,7 +51,7 @@ export async function changePassword(prevState, formData) {
   if (Object.keys(errors).length > 0) return { errors };
 
   // 현재 비밀번호 대입 방지
-  const limit = hit("passwordChange", user.id);
+  const limit = await hit("passwordChange", user.id);
   if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) } };
 
   try {

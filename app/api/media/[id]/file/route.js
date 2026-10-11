@@ -2,9 +2,12 @@ import { createReadStream } from "node:fs";
 import { stat } from "node:fs/promises";
 import { Readable } from "node:stream";
 import { prisma } from "@/lib/db";
+import { viewUrl } from "@/lib/mediaStorage";
 import { resolveUpload } from "@/lib/storage";
 
-// 업로드된 미디어 파일 제공. 영상 탐색(건너뛰기)을 위해 Range 요청을 지원합니다.
+// 업로드된 미디어 파일 제공.
+// - R2 방식: 서명된 보기 주소로 이동(302). 파일 전송은 R2가 직접 처리해 우리 서버 사용량이 늘지 않음
+// - 로컬 방식: 서버가 직접 전송. 영상 탐색(건너뛰기)을 위해 Range 요청을 지원
 export async function GET(request, { params }) {
   const { id } = await params;
   const item = await prisma.mediaItem.findUnique({
@@ -12,6 +15,12 @@ export async function GET(request, { params }) {
     select: { fileName: true, mimeType: true },
   });
   if (!item?.fileName) return new Response("Not Found", { status: 404 });
+
+  const remote = await viewUrl(item.fileName);
+  if (remote) {
+    // 같은 주소가 1시간 단위로 유지되므로 브라우저·CDN이 이미지를 다시 받지 않고 재사용할 수 있음
+    return new Response(null, { status: 302, headers: { Location: remote, "Cache-Control": "public, max-age=300, s-maxage=300" } });
+  }
 
   const filePath = resolveUpload(item.fileName);
   let size;

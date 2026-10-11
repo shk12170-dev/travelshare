@@ -19,7 +19,7 @@ export async function toggleLike(targetType, targetId) {
   if (!user) return { error: "로그인이 필요합니다." };
   const model = likeTargets[targetType];
   if (!model || typeof targetId !== "string") return { error: "잘못된 요청입니다." };
-  const limit = hit("like", user.id);
+  const limit = await hit("like", user.id);
   if (!limit.ok) return { error: limitMessage(limit.retryAfterSec) };
 
   try {
@@ -56,7 +56,7 @@ export async function addComment(logId, prevState, formData) {
   const error = validateComment(body);
   if (error) return { error, body };
 
-  const limit = hit("comment", user.id);
+  const limit = await hit("comment", user.id);
   if (!limit.ok) return { error: limitMessage(limit.retryAfterSec), body };
 
   const log = await prisma.travelLog.findUnique({ where: { id: logId }, select: { id: true } });

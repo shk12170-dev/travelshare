@@ -111,7 +111,7 @@ export default async function ProfilePage({ searchParams }) {
                 key={item.id}
                 className="relative flex aspect-square items-end overflow-hidden rounded-xl bg-slate-800 text-xs font-medium text-white"
               >
-                <MediaThumb item={item} sizes="33vw" />
+                <MediaThumb item={item} />
                 <span className="pointer-events-none relative w-full bg-linear-to-t from-black/60 to-transparent p-2 pt-6">
                   {item.caption}
                 </span>

@@ -49,8 +49,12 @@ test.describe("로그인하지 않은 방문자", () => {
   });
 
   test("쓰기 API는 401로 거부한다", async ({ request }) => {
-    const upload = await request.post("/api/media", { multipart: { caption: "x", region: "제주" } });
-    expect(upload.status()).toBe(401);
+    const permit = await request.post("/api/media", { data: { caption: "x", region: "제주", contentType: "image/png", size: 10 } });
+    expect(permit.status()).toBe(401);
+    const publish = await request.put("/api/media", { data: { token: "x.y" } });
+    expect(publish.status()).toBe(401);
+    const direct = await request.put("/api/media/upload/x.y", { headers: { "Content-Type": "image/png" }, data: Buffer.alloc(4) });
+    expect(direct.status()).toBe(401);
     const del = await request.delete("/api/media/m1");
     expect(del.status()).toBe(401);
   });

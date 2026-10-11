@@ -14,9 +14,9 @@ function field(formData, name) {
 }
 
 // 여러 횟수 제한 규칙을 모두 확인. 하나라도 넘으면 안내 문장, 아니면 null
-function checkLimits(...rules) {
+async function checkLimits(...rules) {
   for (const [rule, id] of rules) {
-    const result = hit(rule, id);
+    const result = await hit(rule, id);
     if (!result.ok) return limitMessage(result.retryAfterSec);
   }
   return null;
@@ -64,7 +64,7 @@ export async function signUp(prevState, formData) {
   if (Object.keys(errors).length > 0) return { errors, values: echo };
 
   const ip = clientIp(await headers());
-  const limited = checkLimits(["signUpPerIp", ip], ["signUpGlobal", "all"]);
+  const limited = await checkLimits(["signUpPerIp", ip], ["signUpGlobal", "all"]);
   if (limited) return { errors: { form: limited }, values: echo };
 
   const nickname = values.nickname.trim();
@@ -93,7 +93,7 @@ export async function signIn(prevState, formData) {
 
   // 비밀번호 대입 공격 방지: 계정(이메일)별, IP별로 시도 횟수 제한
   const email = values.email.trim().toLowerCase();
-  const limited = checkLimits(["signInPerEmail", email], ["signInPerIp", clientIp(await headers())]);
+  const limited = await checkLimits(["signInPerEmail", email], ["signInPerIp", clientIp(await headers())]);
   if (limited) return { errors: { form: limited }, values: echo };
 
   try {
@@ -129,7 +129,7 @@ export async function requestPasswordReset(prevState, formData) {
   const errors = validateLogin({ email, password: "-" });
   if (errors.email) return { errors, values: { email } };
 
-  const limited = checkLimits(
+  const limited = await checkLimits(
     ["resetRequestPerEmail", email],
     ["resetRequestPerIp", clientIp(await headers())],
     ["resetRequestGlobal", "all"],
@@ -151,7 +151,7 @@ export async function resetPassword(prevState, formData) {
   const errors = validatePasswordChange({ currentPassword: "-", newPassword: values.password, confirm: values.passwordConfirm });
   if (Object.keys(errors).length > 0) return { errors: { password: errors.newPassword, passwordConfirm: errors.confirm } };
 
-  const limited = checkLimits(["resetPerIp", clientIp(await headers())]);
+  const limited = await checkLimits(["resetPerIp", clientIp(await headers())]);
   if (limited) return { errors: { form: limited } };
 
   try {

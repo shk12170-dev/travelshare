@@ -1,18 +1,24 @@
 // 샘플 데이터를 DB에 넣습니다. 여러 번 실행해도 같은 결과가 되도록 upsert를 사용합니다.
 // 실행: npm run db:seed
 import "dotenv/config";
-import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
 import { hashPassword } from "better-auth/crypto";
-import { PrismaClient } from "../generated/prisma/client.mts";
-import { databaseUrl } from "./database-url.mjs";
+import { createPrismaClient } from "./client-factory.mjs";
 import { demoAccount, users } from "./seed-data/users.mjs";
 import { courses } from "./seed-data/courses.mjs";
 import { logs } from "./seed-data/logs.mjs";
 import { mediaItems } from "./seed-data/media.mjs";
 
-const prisma = new PrismaClient({
-  adapter: new PrismaBetterSqlite3({ url: databaseUrl }),
-});
+// 데모 계정의 비밀번호는 저장소에 공개되어 있으므로 실제 서비스(원격) DB에는 넣지 않음
+if (process.env.TURSO_DATABASE_URL && process.env.ALLOW_DEMO_SEED !== "1") {
+  console.error(
+    "원격 DB(Turso)에는 데모 데이터를 넣을 수 없습니다. 비밀번호가 공개된 데모 계정이 만들어지기 때문입니다.
+" +
+      "코스 데이터만 넣으려면: npm run db:seed:courses",
+  );
+  process.exit(1);
+}
+
+const prisma = createPrismaClient();
 
 async function main() {
   for (const user of users) {

@@ -57,7 +57,7 @@ export async function createLog(prevState, formData) {
   const errors = validateLog(values);
   if (Object.keys(errors).length > 0) return { errors, values };
 
-  const limit = hit("logCreate", user.id);
+  const limit = await hit("logCreate", user.id);
   if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
 
   let log;
@@ -87,7 +87,7 @@ export async function updateLog(logId, prevState, formData) {
   const errors = validateLog(values);
   if (Object.keys(errors).length > 0) return { errors, values };
 
-  const limit = hit("logUpdate", user.id);
+  const limit = await hit("logUpdate", user.id);
   if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
 
   try {
