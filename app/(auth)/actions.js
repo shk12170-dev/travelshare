@@ -3,7 +3,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
-import { auth } from "@/lib/auth";
+import { getAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { safeReturnPath } from "@/lib/session";
 import { validateLogin, validateSignup } from "@/lib/validation";
@@ -53,7 +53,7 @@ export async function signUp(prevState, formData) {
   }
 
   try {
-    await auth.api.signUpEmail({
+    await getAuth().api.signUpEmail({
       body: { name: nickname, email: values.email.trim().toLowerCase(), password: values.password },
       headers: await headers(),
     });
@@ -72,7 +72,7 @@ export async function signIn(prevState, formData) {
   if (Object.keys(errors).length > 0) return { errors, values: echo };
 
   try {
-    await auth.api.signInEmail({
+    await getAuth().api.signInEmail({
       body: { email: values.email.trim().toLowerCase(), password: values.password },
       headers: await headers(),
     });
@@ -84,6 +84,6 @@ export async function signIn(prevState, formData) {
 }
 
 export async function signOut() {
-  await auth.api.signOut({ headers: await headers() });
+  await getAuth().api.signOut({ headers: await headers() });
   redirect("/");
 }
