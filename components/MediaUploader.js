@@ -16,6 +16,7 @@ export default function MediaUploader() {
   const [videoType, setVideoType] = useState("video");
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState("");
+  const [progress, setProgress] = useState("");
   const inputRef = useRef(null);
   const previewsRef = useRef(previews);
 
@@ -67,31 +68,45 @@ export default function MediaUploader() {
     if (!region) nextErrors.push("지역을 선택하세요.");
     if (nextErrors.length > 0) return setErrors(nextErrors);
 
-    const body = new FormData();
-    previews.forEach((p) => body.append("files", p.file));
-    body.append("caption", caption);
-    body.append("region", region);
-    body.append("videoType", videoType);
-
+    // 파일을 하나씩 순서대로 보냄 (서버가 디스크에 바로 저장)
     setUploading(true);
     setErrors([]);
-    try {
-      const res = await fetch("/api/media", { method: "POST", body });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setErrors(data.errors ?? [data.error ?? "업로드에 실패했습니다."]);
-        return;
+    const query = new URLSearchParams({ caption, region, videoType });
+    const failed = [];
+    let done = 0;
+    for (const [index, p] of previews.entries()) {
+      setProgress(`${index + 1}/${previews.length}`);
+      try {
+        const res = await fetch(`/api/media?${query}`, {
+          method: "POST",
+          headers: { "Content-Type": p.file.type },
+          body: p.file,
+        });
+        if (res.ok) {
+          URL.revokeObjectURL(p.url);
+          done += 1;
+          continue;
+        }
+        const data = await res.json().catch(() => ({}));
+        failed.push({ preview: p, error: data.errors?.[0] ?? "업로드에 실패했습니다." });
+        // 횟수 제한에 걸리면 나머지도 실패하므로 중단
+        if (res.status === 429) {
+          failed.push(...previews.slice(index + 1).map((rest) => ({ preview: rest, error: null })));
+          break;
+        }
+      } catch {
+        failed.push({ preview: p, error: "네트워크 문제로 업로드하지 못했습니다." });
       }
-      previews.forEach((p) => URL.revokeObjectURL(p.url));
-      setPreviews([]);
-      setCaption("");
-      setMessage(`${data.count}개를 게시했습니다.`);
-      router.refresh();
-    } catch {
-      setErrors(["네트워크 문제로 업로드하지 못했습니다."]);
-    } finally {
-      setUploading(false);
     }
+
+    // 실패한 파일만 남겨 다시 시도할 수 있게 함
+    setPreviews(failed.map((f) => f.preview));
+    setErrors(failed.filter((f) => f.error).map((f) => `${f.preview.name}: ${f.error}`));
+    if (failed.length === 0) setCaption("");
+    setMessage(done > 0 ? `${done}개를 게시했습니다.` : "");
+    setProgress("");
+    setUploading(false);
+    if (done > 0) router.refresh();
   }
 
   const inputClass =
@@ -186,7 +201,7 @@ export default function MediaUploader() {
             disabled={uploading}
             className="self-start rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60 dark:text-slate-900"
           >
-            {uploading ? "올리는 중..." : `${previews.length}개 게시하기`}
+            {uploading ? `올리는 중... ${progress}` : `${previews.length}개 게시하기`}
           </button>
         </form>
       )}

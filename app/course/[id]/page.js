@@ -19,7 +19,7 @@ export default async function CourseDetailPage({ params }) {
   const course = await getCourse(id);
   if (!course) notFound();
 
-  const [relatedLogs, user] = await Promise.all([getLogs({ courseId: course.id }), getCurrentUser()]);
+  const [relatedLogs, user] = await Promise.all([getLogs({ courseId: course.id, take: 6 }), getCurrentUser()]);
   const liked = (await getLikedIds(user?.id, "course", [course.id])).has(course.id);
 
   return (

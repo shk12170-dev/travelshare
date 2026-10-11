@@ -5,11 +5,21 @@ import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
 import { enabledSocialProviders, getAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { clientIp, hit, limitMessage } from "@/lib/rateLimit";
 import { safeReturnPath } from "@/lib/session";
 import { validateLogin, validatePasswordChange, validateSignup } from "@/lib/validation";
 
 function field(formData, name) {
   return String(formData.get(name) ?? "");
+}
+
+// 여러 횟수 제한 규칙을 모두 확인. 하나라도 넘으면 안내 문장, 아니면 null
+function checkLimits(...rules) {
+  for (const [rule, id] of rules) {
+    const result = hit(rule, id);
+    if (!result.ok) return limitMessage(result.retryAfterSec);
+  }
+  return null;
 }
 
 // Better Auth 오류 코드를 사용자에게 보여 줄 문장으로 변환
@@ -53,6 +63,10 @@ export async function signUp(prevState, formData) {
   const errors = validateSignup(values);
   if (Object.keys(errors).length > 0) return { errors, values: echo };
 
+  const ip = clientIp(await headers());
+  const limited = checkLimits(["signUpPerIp", ip], ["signUpGlobal", "all"]);
+  if (limited) return { errors: { form: limited }, values: echo };
+
   const nickname = values.nickname.trim();
   if (await prisma.user.findUnique({ where: { nickname }, select: { id: true } })) {
     return { errors: { nickname: "이미 사용 중인 닉네임입니다." }, values: echo };
@@ -76,6 +90,11 @@ export async function signIn(prevState, formData) {
 
   const errors = validateLogin(values);
   if (Object.keys(errors).length > 0) return { errors, values: echo };
+
+  // 비밀번호 대입 공격 방지: 계정(이메일)별, IP별로 시도 횟수 제한
+  const email = values.email.trim().toLowerCase();
+  const limited = checkLimits(["signInPerEmail", email], ["signInPerIp", clientIp(await headers())]);
+  if (limited) return { errors: { form: limited }, values: echo };
 
   try {
     await getAuth().api.signInEmail({
@@ -110,6 +129,13 @@ export async function requestPasswordReset(prevState, formData) {
   const errors = validateLogin({ email, password: "-" });
   if (errors.email) return { errors, values: { email } };
 
+  const limited = checkLimits(
+    ["resetRequestPerEmail", email],
+    ["resetRequestPerIp", clientIp(await headers())],
+    ["resetRequestGlobal", "all"],
+  );
+  if (limited) return { errors: { form: limited }, values: { email } };
+
   try {
     await getAuth().api.requestPasswordReset({ body: { email }, headers: await headers() });
   } catch (error) {
@@ -124,6 +150,9 @@ export async function resetPassword(prevState, formData) {
   const values = { password: field(formData, "password"), passwordConfirm: field(formData, "passwordConfirm") };
   const errors = validatePasswordChange({ currentPassword: "-", newPassword: values.password, confirm: values.passwordConfirm });
   if (Object.keys(errors).length > 0) return { errors: { password: errors.newPassword, passwordConfirm: errors.confirm } };
+
+  const limited = checkLimits(["resetPerIp", clientIp(await headers())]);
+  if (limited) return { errors: { form: limited } };
 
   try {
     await getAuth().api.resetPassword({ body: { token, newPassword: values.password }, headers: await headers() });

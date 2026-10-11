@@ -125,6 +125,8 @@ model TravelLog {
   comments  Comment[]
 
   @@index([createdAt])
+  @@index([authorId, createdAt])
+  @@index([courseId, createdAt])
 }
 
 model MediaItem {
@@ -146,6 +148,8 @@ model MediaItem {
   author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
+  @@index([type, createdAt])
+  @@index([authorId, createdAt])
 }
 
 // 여행 로그 댓글

@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { hit, limitMessage } from "@/lib/rateLimit";
 import { splitTips, validateLog } from "@/lib/validation";
 
 const covers = [
@@ -56,6 +57,9 @@ export async function createLog(prevState, formData) {
   const errors = validateLog(values);
   if (Object.keys(errors).length > 0) return { errors, values };
 
+  const limit = hit("logCreate", user.id);
+  if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
+
   let log;
   try {
     log = await prisma.travelLog.create({
@@ -77,11 +81,14 @@ export async function createLog(prevState, formData) {
 // 사용: updateLog.bind(null, logId)
 export async function updateLog(logId, prevState, formData) {
   const values = readForm(formData);
-  const { error } = await checkOwner(logId);
+  const { error, user } = await checkOwner(logId);
   if (error) return { errors: error, values };
 
   const errors = validateLog(values);
   if (Object.keys(errors).length > 0) return { errors, values };
+
+  const limit = hit("logUpdate", user.id);
+  if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
 
   try {
     await prisma.travelLog.update({ where: { id: logId }, data: toData(values) });

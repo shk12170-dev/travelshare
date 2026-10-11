@@ -6,6 +6,7 @@ import { APIError } from "better-auth/api";
 import { getAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { hit, limitMessage } from "@/lib/rateLimit";
 import { validatePasswordChange, validateProfile } from "@/lib/validation";
 
 const LOGIN_REQUIRED = { form: "로그인이 필요합니다." };
@@ -22,6 +23,9 @@ export async function updateProfile(prevState, formData) {
 
   const errors = validateProfile(values);
   if (Object.keys(errors).length > 0) return { errors, values };
+
+  const limit = hit("profileUpdate", user.id);
+  if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
 
   const nickname = values.nickname.trim();
   const taken = await prisma.user.findUnique({ where: { nickname }, select: { id: true } });
@@ -40,10 +44,15 @@ export async function changePassword(prevState, formData) {
     newPassword: String(formData.get("newPassword") ?? ""),
     confirm: String(formData.get("confirm") ?? ""),
   };
-  if (!(await getCurrentUser())) return { errors: LOGIN_REQUIRED };
+  const user = await getCurrentUser();
+  if (!user) return { errors: LOGIN_REQUIRED };
 
   const errors = validatePasswordChange(values);
   if (Object.keys(errors).length > 0) return { errors };
+
+  // 현재 비밀번호 대입 방지
+  const limit = hit("passwordChange", user.id);
+  if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) } };
 
   try {
     await getAuth().api.changePassword({

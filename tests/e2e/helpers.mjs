@@ -32,6 +32,16 @@ export async function logOut(page) {
   await expect(page.getByRole("banner").getByRole("link", { name: "로그인" })).toBeVisible();
 }
 
+// 테스트 전용 DB에 직접 쓰기 (페이지 나누기 확인용 대량 데이터 등)
+export function writeE2eDb(fn) {
+  const db = new Database("prisma/e2e.db");
+  try {
+    return db.transaction(fn)(db);
+  } finally {
+    db.close();
+  }
+}
+
 // 테스트 전용 DB를 직접 읽기 (메일 대신 재설정 토큰 확인 등)
 export function readE2eDb(sql, ...params) {
   const db = new Database("prisma/e2e.db", { readonly: true });

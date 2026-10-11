@@ -3,7 +3,7 @@ import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
 import CourseCard from "@/components/CourseCard";
 import MediaThumb from "@/components/MediaThumb";
-import { getLikedCourses, getLogs, getMediaItems, getUser } from "@/lib/queries";
+import { getLikedCourses, getLogs, getMediaItems, getUser, getUserStats } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { themes, labelOf } from "@/data/options";
 
@@ -16,14 +16,14 @@ export const metadata = {
 export default async function ProfilePage({ searchParams }) {
   const { id } = await requireUser("/profile");
   const { updated } = await searchParams;
-  const [user, myLogs, myMedia, likedCourses] = await Promise.all([
+  const [user, myLogs, myMedia, likedCourses, stats] = await Promise.all([
     getUser(id),
-    getLogs({ authorId: id }),
-    getMediaItems({ authorId: id }),
+    getLogs({ authorId: id, take: 6 }),
+    getMediaItems({ authorId: id, take: 12 }),
     getLikedCourses(id),
+    getUserStats(id),
   ]);
   const favoriteThemes = Array.isArray(user.favoriteThemes) ? user.favoriteThemes : [];
-  const totalLikes = [...myLogs, ...myMedia].reduce((sum, item) => sum + item.likes, 0);
 
   return (
     <div className="flex flex-col gap-8">
@@ -47,18 +47,25 @@ export default async function ProfilePage({ searchParams }) {
           </Link>
         </div>
         <dl className="grid grid-cols-3 gap-4 text-center">
-          <Stat label="로그" value={myLogs.length} />
-          <Stat label="미디어" value={myMedia.length} />
-          <Stat label="좋아요" value={totalLikes} />
+          <Stat label="로그" value={stats.logs} />
+          <Stat label="미디어" value={stats.media} />
+          <Stat label="받은 좋아요" value={stats.likes} />
         </dl>
       </section>
 
       <section>
         <div className="mb-4 flex items-baseline justify-between">
           <h2 className="text-xl font-bold">내 여행 로그</h2>
-          <Link href="/log/new" className="text-sm font-medium text-brand">
-            + 새 로그
-          </Link>
+          <div className="flex gap-3 text-sm font-medium">
+            {stats.logs > myLogs.length && (
+              <Link href={`/log?author=${id}`} className="text-brand">
+                전체 {stats.logs}개 보기
+              </Link>
+            )}
+            <Link href="/log/new" className="text-brand">
+              + 새 로그
+            </Link>
+          </div>
         </div>
         {myLogs.length > 0 ? (
           <div className="grid gap-3 md:grid-cols-2">
@@ -89,7 +96,14 @@ export default async function ProfilePage({ searchParams }) {
       </section>
 
       <section>
-        <h2 className="mb-4 text-xl font-bold">내 미디어</h2>
+        <div className="mb-4 flex items-baseline justify-between">
+          <h2 className="text-xl font-bold">내 미디어</h2>
+          {stats.media > myMedia.length && (
+            <Link href={`/media?author=${id}`} className="text-sm font-medium text-brand">
+              전체 {stats.media}개 보기
+            </Link>
+          )}
+        </div>
         {myMedia.length > 0 ? (
           <ul className="grid grid-cols-3 gap-2">
             {myMedia.map((item) => (

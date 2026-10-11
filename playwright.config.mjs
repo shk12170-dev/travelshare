@@ -11,6 +11,8 @@ export const e2eEnv = {
   BETTER_AUTH_URL: baseURL,
   // 테스트 전용 값 (실제 서비스에 쓰지 마세요)
   BETTER_AUTH_SECRET: "e2e-only-secret-not-for-production-0123456789",
+  // 한 PC에서 계정을 여러 개 만들므로 횟수 제한을 넉넉하게
+  RATE_LIMIT_MULTIPLIER: "20",
   // 테스트에서는 메일 대신 콘솔 출력
   RESEND_API_KEY: "",
   MAIL_FROM: "",

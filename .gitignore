@@ -45,6 +45,11 @@ next-env.d.ts
 /generated/
 /prisma/*.db
 /prisma/*.db-journal
+/prisma/*.db-wal
+/prisma/*.db-shm
+
+# 백업
+/backups/
 
 # 업로드된 미디어 파일
 /storage/

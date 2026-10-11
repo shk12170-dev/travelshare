@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Chip from "./Chip";
 import MediaThumb from "./MediaThumb";
 import LikeButton from "./LikeButton";
 import { mediaTypes, labelOf } from "@/data/options";
@@ -11,10 +10,8 @@ const typeIcon = { photo: "🖼️", video: "🎬", shorts: "⚡" };
 
 export default function MediaGallery({ items, currentUserId, likedIds = [] }) {
   const router = useRouter();
-  const [type, setType] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
   const [error, setError] = useState("");
-  const filtered = type ? items.filter((item) => item.type === type) : items;
 
   async function handleDelete(item) {
     if (!window.confirm(`"${item.caption}"을(를) 삭제할까요? 되돌릴 수 없습니다.`)) return;
@@ -37,30 +34,19 @@ export default function MediaGallery({ items, currentUserId, likedIds = [] }) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap gap-2">
-        <Chip active={type === null} onClick={() => setType(null)}>
-          전체
-        </Chip>
-        {mediaTypes.map((option) => (
-          <Chip key={option.id} active={type === option.id} onClick={() => setType(option.id)}>
-            {option.label}
-          </Chip>
-        ))}
-      </div>
-
       {error && (
         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {error}
         </p>
       )}
 
-      {filtered.length === 0 ? (
+      {items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-border py-16 text-center text-sm text-muted">
           아직 올라온 미디어가 없습니다.
         </p>
       ) : (
         <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:gap-3">
-          {filtered.map((item) => (
+          {items.map((item) => (
             <li
               key={item.id}
               className="relative flex aspect-[4/5] flex-col justify-end overflow-hidden rounded-xl bg-slate-800 text-white"

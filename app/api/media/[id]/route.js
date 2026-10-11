@@ -1,11 +1,14 @@
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { hit, limitMessage } from "@/lib/rateLimit";
 import { removeUpload } from "@/lib/storage";
 
 // 미디어 삭제: 본인이 올린 것만 가능
 export async function DELETE(request, { params }) {
   const user = await getCurrentUser();
   if (!user) return Response.json({ errors: ["로그인이 필요합니다."] }, { status: 401 });
+  const limit = hit("mediaDelete", user.id);
+  if (!limit.ok) return Response.json({ errors: [limitMessage(limit.retryAfterSec)] }, { status: 429 });
 
   const { id } = await params;
   const item = await prisma.mediaItem.findUnique({ where: { id }, select: { authorId: true, fileName: true } });

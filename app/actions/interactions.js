@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
+import { hit, limitMessage } from "@/lib/rateLimit";
 import { COMMENT_LIMITS, validateComment } from "@/lib/validation";
 
 // 좋아요 대상별 테이블
@@ -18,6 +19,8 @@ export async function toggleLike(targetType, targetId) {
   if (!user) return { error: "로그인이 필요합니다." };
   const model = likeTargets[targetType];
   if (!model || typeof targetId !== "string") return { error: "잘못된 요청입니다." };
+  const limit = hit("like", user.id);
+  if (!limit.ok) return { error: limitMessage(limit.retryAfterSec) };
 
   try {
     return await prisma.$transaction(async (tx) => {
@@ -52,6 +55,9 @@ export async function addComment(logId, prevState, formData) {
 
   const error = validateComment(body);
   if (error) return { error, body };
+
+  const limit = hit("comment", user.id);
+  if (!limit.ok) return { error: limitMessage(limit.retryAfterSec), body };
 
   const log = await prisma.travelLog.findUnique({ where: { id: logId }, select: { id: true } });
   if (!log) return { error: "삭제되었거나 없는 로그입니다.", body };

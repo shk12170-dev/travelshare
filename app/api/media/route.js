@@ -1,71 +1,75 @@
 import { prisma } from "@/lib/db";
+import { hit, limitMessage } from "@/lib/rateLimit";
 import { getCurrentUser } from "@/lib/session";
-import { matchesSignature, removeUpload, saveUpload } from "@/lib/storage";
-import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/validation";
+import { UploadError, removeUpload, saveUploadStream } from "@/lib/storage";
+import { UPLOAD_LIMITS, allowedMimeTypes, maxUploadBytes } from "@/lib/validation";
 import { regions } from "@/data/options";
 
-// 미디어 업로드: multipart/form-data
-//   files: 파일(여러 개), caption: 설명, region: 지역, videoType: video | shorts
+const uploadErrors = {
+  TOO_LARGE: [413, "파일이 너무 큽니다."],
+  BAD_SIGNATURE: [400, "파일 내용이 형식과 맞지 않습니다."],
+  EMPTY: [400, "빈 파일입니다."],
+};
+
+function fail(status, message) {
+  return Response.json({ errors: [message] }, { status });
+}
+
+// 미디어 업로드: 파일 1개를 요청 본문 그대로 보냄 (multipart 아님)
+//   POST /api/media?caption=설명&region=지역&videoType=video|shorts
+//   Content-Type: 파일 형식 (예: image/jpeg), 본문: 파일 내용
+// 본문을 메모리에 모으지 않고 디스크에 바로 쓰므로 큰 영상도 메모리를 거의 쓰지 않음
 export async function POST(request) {
   const user = await getCurrentUser();
-  if (!user) return Response.json({ errors: ["로그인이 필요합니다."] }, { status: 401 });
+  if (!user) return fail(401, "로그인이 필요합니다.");
 
-  let formData;
+  const params = new URL(request.url).searchParams;
+  const caption = String(params.get("caption") ?? "").trim();
+  const region = String(params.get("region") ?? "");
+  const videoType = params.get("videoType") === "shorts" ? "shorts" : "video";
+  const mimeType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
+
+  if (!caption) return fail(400, "설명을 입력하세요.");
+  if (caption.length > UPLOAD_LIMITS.captionMax) return fail(400, `설명은 ${UPLOAD_LIMITS.captionMax}자 이하로 입력하세요.`);
+  if (!regions.includes(region)) return fail(400, "지역을 선택하세요.");
+  const extension = allowedMimeTypes[mimeType];
+  if (!extension) return fail(415, "JPG, PNG, WEBP, GIF 사진 또는 MP4, WEBM, MOV 영상만 올릴 수 있습니다.");
+
+  // 크기를 미리 알려 준 경우 받기 전에 거부 (알려 주지 않아도 받는 중에 한도를 넘으면 중단)
+  const maxBytes = maxUploadBytes(mimeType);
+  const declared = Number(request.headers.get("content-length"));
+  if (declared > maxBytes) return fail(413, `${mimeType.startsWith("image/") ? "사진" : "영상"}은 ${maxBytes / 1024 / 1024}MB 이하만 가능합니다.`);
+  if (!request.body) return fail(400, "파일이 없습니다.");
+
+  const limit = hit("upload", user.id);
+  if (!limit.ok) return fail(429, limitMessage(limit.retryAfterSec));
+
+  let saved;
   try {
-    formData = await request.formData();
-  } catch {
-    return Response.json({ error: "업로드 형식이 올바르지 않습니다." }, { status: 400 });
+    saved = await saveUploadStream(request.body, { extension, mimeType, maxBytes });
+  } catch (error) {
+    if (error instanceof UploadError) return fail(...uploadErrors[error.code]);
+    console.error("업로드 저장 실패", error);
+    return fail(500, "업로드 중 문제가 발생했습니다. 다시 시도하세요.");
   }
 
-  const files = formData.getAll("files").filter((f) => typeof f === "object" && "arrayBuffer" in f);
-  const caption = String(formData.get("caption") ?? "").trim();
-  const region = String(formData.get("region") ?? "");
-  const videoType = formData.get("videoType") === "shorts" ? "shorts" : "video";
-
-  const errors = [];
-  if (files.length === 0) errors.push("올릴 파일을 선택하세요.");
-  if (files.length > UPLOAD_LIMITS.maxFiles) errors.push(`한 번에 최대 ${UPLOAD_LIMITS.maxFiles}개까지 올릴 수 있습니다.`);
-  if (!caption) errors.push("설명을 입력하세요.");
-  if (caption.length > UPLOAD_LIMITS.captionMax) errors.push(`설명은 ${UPLOAD_LIMITS.captionMax}자 이하로 입력하세요.`);
-  if (!regions.includes(region)) errors.push("지역을 선택하세요.");
-  for (const file of files) {
-    const error = validateMediaFile(file);
-    if (error) errors.push(`${file.name}: ${error}`);
-  }
-  if (errors.length > 0) return Response.json({ errors }, { status: 400 });
-
-  // 모든 파일 내용을 먼저 확인한 뒤 저장
-  const buffers = [];
-  for (const file of files) {
-    const buffer = Buffer.from(await file.arrayBuffer());
-    if (!matchesSignature(buffer, file.type)) {
-      return Response.json({ errors: [`${file.name}: 파일 내용이 형식과 맞지 않습니다.`] }, { status: 400 });
-    }
-    buffers.push(buffer);
-  }
-
-  const saved = [];
   try {
-    const created = [];
-    for (const [index, file] of files.entries()) {
-      const fileName = await saveUpload(buffers[index], allowedMimeTypes[file.type]);
-      saved.push(fileName);
-      created.push({
-        type: file.type.startsWith("image/") ? "photo" : videoType,
+    const item = await prisma.mediaItem.create({
+      data: {
+        type: mimeType.startsWith("image/") ? "photo" : videoType,
         caption,
         region,
-        fileName,
-        mimeType: file.type,
-        size: file.size,
+        fileName: saved.fileName,
+        mimeType,
+        size: saved.size,
         authorId: user.id,
-      });
-    }
-    await prisma.mediaItem.createMany({ data: created });
+      },
+      select: { id: true },
+    });
+    return Response.json({ id: item.id }, { status: 201 });
   } catch (error) {
     console.error("미디어 저장 실패", error);
-    await Promise.all(saved.map(removeUpload));
-    return Response.json({ errors: ["저장 중 문제가 발생했습니다. 잠시 후 다시 시도하세요."] }, { status: 500 });
+    await removeUpload(saved.fileName);
+    return fail(500, "저장 중 문제가 발생했습니다. 잠시 후 다시 시도하세요.");
   }
-
-  return Response.json({ count: saved.length }, { status: 201 });
 }
