@@ -6,13 +6,14 @@
 - 동행 유형 × 테마별 여행 코스 추천
 - 여행 로그와 팁 공유
 
-로그 작성과 미디어 업로드가 SQLite DB에 저장됩니다. 로그인은 아직 없어 샘플 사용자(바다고양이)로 작성됩니다. 진행 상황과 단계별 계획은 [작업계획.md](작업계획.md)를 참고하세요.
+이메일 회원가입·로그인을 지원하며, 로그인한 사용자만 로그 작성과 미디어 업로드를 할 수 있고 본인 글만 수정·삭제할 수 있습니다. 데이터는 SQLite DB에 저장됩니다. 진행 상황과 단계별 계획은 [작업계획.md](작업계획.md)를 참고하세요.
 
 ## 기술 스택
 
 - Next.js 16 (App Router), React 19
 - Tailwind CSS 4
 - Prisma 7 + SQLite (better-sqlite3)
+- Better Auth (이메일·비밀번호 로그인)
 - ESLint 9
 
 ## 시작하기
@@ -27,6 +28,11 @@ npm run dev
 ```
 
 브라우저에서 [http://localhost:3000](http://localhost:3000)을 엽니다.
+
+- 데모 계정: `seacat@sample.travelshare.test` (비밀번호는 `prisma/seed-data/users.mjs`의 `demoAccount` 참고). 회원가입으로 새 계정을 만들어도 됩니다.
+- 환경 변수는 선택입니다. 개발 중에는 `.env` 없이도 동작하며, 바꾸고 싶을 때만 `.env.example`을 `.env`로 복사해 수정하세요.
+- **운영 배포 시** `BETTER_AUTH_SECRET`(32자 이상 무작위 값)과 `BETTER_AUTH_URL`(실제 사이트 주소)을 반드시 설정하세요.
+- DB 구조(스키마)를 바꾼 뒤에는 개발 서버를 다시 시작하세요. 실행 중인 서버는 이전 DB 연결을 계속 사용합니다.
 
 | 명령 | 설명 |
 |------|------|
@@ -43,10 +49,12 @@ npm run dev
 ```
 app/              화면과 API
   api/media/      미디어 업로드(POST), 파일 제공(GET /api/media/[id]/file)
-  log/actions.js  로그 저장 Server Action
+  api/auth/       로그인·가입 API (Better Auth)
+  (auth)/         로그인·회원가입 화면과 Server Action
+  log/actions.js  로그 작성·수정·삭제 Server Action (작성자 확인)
 components/       공통 컴포넌트
 data/options.js   동행 유형·테마·지역 등 선택지
-lib/              DB 연결, 조회, 입력 검증, 파일 저장
+lib/              DB 연결, 인증·세션, 조회, 입력 검증, 파일 저장
 prisma/           스키마, 마이그레이션, 샘플 데이터(seed)
 storage/uploads/  업로드된 파일 (Git 제외)
 generated/        Prisma가 생성한 코드 (Git 제외)

@@ -3,18 +3,20 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { navItems, isActive } from "./navItems";
+import { signOut } from "@/app/(auth)/actions";
 
-export default function Header() {
+export default function Header({ user }) {
   const pathname = usePathname();
+  const loginHref = pathname === "/" || pathname === "/login" ? "/login" : `/login?next=${encodeURIComponent(pathname)}`;
 
   return (
     <header className="sticky top-0 z-20 border-b border-border bg-surface/90 backdrop-blur">
-      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-4">
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
         <Link href="/" className="text-lg font-bold tracking-tight">
           Travel<span className="text-brand">Share</span>
         </Link>
         {/* 데스크톱 메뉴. 모바일은 하단 탭(BottomNav)을 사용 */}
-        <nav className="hidden gap-1 md:flex">
+        <nav className="hidden flex-1 justify-center gap-1 md:flex">
           {navItems.map((item) => (
             <Link
               key={item.href}
@@ -29,6 +31,25 @@ export default function Header() {
             </Link>
           ))}
         </nav>
+        {user ? (
+          <div className="flex items-center gap-2 text-sm">
+            <Link href="/profile" className="max-w-32 truncate font-medium">
+              {user.nickname}
+            </Link>
+            <form action={signOut}>
+              <button type="submit" className="rounded-full border border-border px-3 py-1 text-xs text-muted hover:text-foreground">
+                로그아웃
+              </button>
+            </form>
+          </div>
+        ) : (
+          <Link
+            href={loginHref}
+            className="rounded-full bg-brand px-4 py-1.5 text-sm font-semibold text-white dark:text-slate-900"
+          >
+            로그인
+          </Link>
+        )}
       </div>
     </header>
   );

@@ -24,7 +24,8 @@ export async function GET(request, { params }) {
   const headers = {
     "Content-Type": item.mimeType,
     "Accept-Ranges": "bytes",
-    "Cache-Control": "public, max-age=31536000, immutable",
+    // 삭제된 파일이 브라우저·CDN에 오래 남지 않도록 1시간만 캐시
+    "Cache-Control": "public, max-age=3600",
     "X-Content-Type-Options": "nosniff",
   };
 

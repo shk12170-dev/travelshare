@@ -2,9 +2,10 @@
 // 실행: npm run db:seed
 import "dotenv/config";
 import { PrismaBetterSqlite3 } from "@prisma/adapter-better-sqlite3";
+import { hashPassword } from "better-auth/crypto";
 import { PrismaClient } from "../generated/prisma/client.mts";
 import { databaseUrl } from "./database-url.mjs";
-import { users } from "./seed-data/users.mjs";
+import { demoAccount, users } from "./seed-data/users.mjs";
 import { courses } from "./seed-data/courses.mjs";
 import { logs } from "./seed-data/logs.mjs";
 import { mediaItems } from "./seed-data/media.mjs";
@@ -17,6 +18,13 @@ async function main() {
   for (const user of users) {
     await prisma.user.upsert({ where: { id: user.id }, update: user, create: user });
   }
+
+  // 데모 계정 비밀번호 (Better Auth와 같은 방식으로 해시해서 저장)
+  const password = await hashPassword(demoAccount.password);
+  const credential = { providerId: "credential", accountId: demoAccount.userId, userId: demoAccount.userId };
+  const existing = await prisma.account.findFirst({ where: credential, select: { id: true } });
+  if (existing) await prisma.account.update({ where: { id: existing.id }, data: { password } });
+  else await prisma.account.create({ data: { ...credential, id: `seed-${demoAccount.userId}`, password } });
 
   for (const { stops, ...course } of courses) {
     await prisma.course.upsert({ where: { id: course.id }, update: course, create: course });
@@ -38,6 +46,7 @@ async function main() {
   console.log(
     `사용자 ${users.length}, 코스 ${courses.length}, 로그 ${logs.length}, 미디어 ${mediaItems.length}건 입력 완료`,
   );
+  console.log(`데모 계정: ${demoAccount.email} (비밀번호는 prisma/seed-data/users.mjs 참고)`);
 }
 
 main()

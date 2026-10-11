@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { CURRENT_USER_ID } from "@/lib/currentUser";
+import { getCurrentUser } from "@/lib/session";
 import { splitTips, validateLog } from "@/lib/validation";
 
 const covers = [
@@ -12,6 +12,9 @@ const covers = [
   "from-emerald-300 to-teal-600",
   "from-orange-300 to-red-500",
 ];
+
+const LOGIN_REQUIRED = { form: "로그인이 필요합니다. 로그인 후 다시 시도하세요." };
+const NOT_OWNER = { form: "본인이 작성한 로그만 수정·삭제할 수 있습니다." };
 
 function readForm(formData) {
   const field = (name) => String(formData.get(name) ?? "");
@@ -24,24 +27,42 @@ function readForm(formData) {
   };
 }
 
+function toData(values) {
+  const body = values.body.trim().replace(/\r\n/g, "\n");
+  return {
+    title: values.title.trim(),
+    region: values.region,
+    companion: values.companion,
+    body,
+    excerpt: body.replace(/\s+/g, " ").slice(0, 80),
+    tips: splitTips(values.tips),
+  };
+}
+
+// 로그인한 사용자가 이 로그의 작성자인지 확인
+async function checkOwner(logId) {
+  const user = await getCurrentUser();
+  if (!user) return { error: LOGIN_REQUIRED };
+  const log = await prisma.travelLog.findUnique({ where: { id: logId }, select: { authorId: true } });
+  if (!log || log.authorId !== user.id) return { error: NOT_OWNER };
+  return { user };
+}
+
 export async function createLog(prevState, formData) {
   const values = readForm(formData);
+  const user = await getCurrentUser();
+  if (!user) return { errors: LOGIN_REQUIRED, values };
+
   const errors = validateLog(values);
   if (Object.keys(errors).length > 0) return { errors, values };
 
-  const body = values.body.trim().replace(/\r\n/g, "\n");
   let log;
   try {
     log = await prisma.travelLog.create({
       data: {
-        title: values.title.trim(),
-        region: values.region,
-        companion: values.companion,
-        body,
-        excerpt: body.replace(/\s+/g, " ").slice(0, 80),
-        tips: splitTips(values.tips),
+        ...toData(values),
         cover: covers[Math.floor(Math.random() * covers.length)],
-        authorId: CURRENT_USER_ID,
+        authorId: user.id,
       },
     });
   } catch (error) {
@@ -51,4 +72,32 @@ export async function createLog(prevState, formData) {
 
   // redirect는 예외로 동작하므로 try 블록 밖에서 호출
   redirect(`/log/${log.id}`);
+}
+
+// 사용: updateLog.bind(null, logId)
+export async function updateLog(logId, prevState, formData) {
+  const values = readForm(formData);
+  const { error } = await checkOwner(logId);
+  if (error) return { errors: error, values };
+
+  const errors = validateLog(values);
+  if (Object.keys(errors).length > 0) return { errors, values };
+
+  try {
+    await prisma.travelLog.update({ where: { id: logId }, data: toData(values) });
+  } catch (error) {
+    console.error("로그 수정 실패", error);
+    return { errors: { form: "저장 중 문제가 발생했습니다. 잠시 후 다시 시도하세요." }, values };
+  }
+
+  redirect(`/log/${logId}`);
+}
+
+// 사용: deleteLog.bind(null, logId)
+export async function deleteLog(logId) {
+  const { error } = await checkOwner(logId);
+  if (error) return { errors: error };
+
+  await prisma.travelLog.delete({ where: { id: logId } });
+  redirect("/log");
 }

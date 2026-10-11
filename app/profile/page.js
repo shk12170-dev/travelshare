@@ -3,7 +3,7 @@ import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
 import MediaThumb from "@/components/MediaThumb";
 import { getLogs, getMediaItems, getUser } from "@/lib/queries";
-import { CURRENT_USER_ID } from "@/lib/currentUser";
+import { requireUser } from "@/lib/session";
 import { themes, labelOf } from "@/data/options";
 
 export const dynamic = "force-dynamic";
@@ -13,10 +13,11 @@ export const metadata = {
 };
 
 export default async function ProfilePage() {
+  const { id } = await requireUser("/profile");
   const [user, myLogs, myMedia] = await Promise.all([
-    getUser(CURRENT_USER_ID),
-    getLogs({ authorId: CURRENT_USER_ID }),
-    getMediaItems({ authorId: CURRENT_USER_ID }),
+    getUser(id),
+    getLogs({ authorId: id }),
+    getMediaItems({ authorId: id }),
   ]);
   const totalLikes = [...myLogs, ...myMedia].reduce((sum, item) => sum + item.likes, 0);
 

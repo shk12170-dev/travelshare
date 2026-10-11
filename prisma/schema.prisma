@@ -13,15 +13,69 @@ datasource db {
   provider = "sqlite"
 }
 
+// 사용자. 로그인(Better Auth)과 공유하는 테이블이며 Better Auth의 name 필드는 nickname에 연결
 model User {
-  id             String       @id
-  nickname       String       @unique
-  bio            String       @default("")
-  avatar         String       @default("from-sky-400 to-teal-500")
-  favoriteThemes Json         @default("[]")
-  createdAt      DateTime     @default(now())
+  id             String      @id
+  nickname       String      @unique
+  email          String      @unique
+  emailVerified  Boolean     @default(false)
+  image          String?
+  bio            String      @default("")
+  avatar         String      @default("from-sky-400 to-teal-500")
+  favoriteThemes Json        @default("[]")
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
   logs           TravelLog[]
   media          MediaItem[]
+  sessions       Session[]
+  accounts       Account[]
+}
+
+// 로그인 세션 (Better Auth)
+model Session {
+  id        String   @id
+  token     String   @unique
+  expiresAt DateTime
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// 로그인 수단 (Better Auth). 이메일 로그인은 providerId "credential", 비밀번호는 해시로 저장
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  password              String?
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// 이메일 인증 등 일회용 토큰 (Better Auth)
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
 }
 
 model Course {

@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { CURRENT_USER_ID } from "@/lib/currentUser";
+import { getCurrentUser } from "@/lib/session";
 import { matchesSignature, removeUpload, saveUpload } from "@/lib/storage";
 import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/validation";
 import { regions } from "@/data/options";
@@ -7,6 +7,9 @@ import { regions } from "@/data/options";
 // 미디어 업로드: multipart/form-data
 //   files: 파일(여러 개), caption: 설명, region: 지역, videoType: video | shorts
 export async function POST(request) {
+  const user = await getCurrentUser();
+  if (!user) return Response.json({ errors: ["로그인이 필요합니다."] }, { status: 401 });
+
   let formData;
   try {
     formData = await request.formData();
@@ -54,7 +57,7 @@ export async function POST(request) {
         fileName,
         mimeType: file.type,
         size: file.size,
-        authorId: CURRENT_USER_ID,
+        authorId: user.id,
       });
     }
     await prisma.mediaItem.createMany({ data: created });
