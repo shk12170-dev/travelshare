@@ -1,25 +1,22 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import Tag from "@/components/Tag";
-import { logs, getLog } from "@/data/logs";
-import { getCourse } from "@/data/courses";
+import { getCourse, getLog } from "@/lib/queries";
 import { companions, labelOf } from "@/data/options";
 
-export function generateStaticParams() {
-  return logs.map((log) => ({ id: log.id }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  return { title: getLog(id)?.title };
+  return { title: (await getLog(id))?.title };
 }
 
 export default async function LogDetailPage({ params }) {
   const { id } = await params;
-  const log = getLog(id);
+  const log = await getLog(id);
   if (!log) notFound();
 
-  const course = getCourse(log.courseId);
+  const course = log.courseId ? await getCourse(log.courseId) : null;
 
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-6">

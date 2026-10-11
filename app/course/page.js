@@ -1,11 +1,15 @@
 import CourseExplorer from "@/components/CourseExplorer";
-import { courses } from "@/data/courses";
+import { getCourses } from "@/lib/queries";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "여행 코스 추천",
 };
 
-export default function CoursePage() {
+export default async function CoursePage() {
+  const courses = await getCourses();
+
   return (
     <div className="flex flex-col gap-6">
       <div>

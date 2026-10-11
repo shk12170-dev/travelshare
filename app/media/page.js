@@ -1,12 +1,16 @@
 import MediaGallery from "@/components/MediaGallery";
 import MediaUploader from "@/components/MediaUploader";
-import { mediaItems } from "@/data/media";
+import { getMediaItems } from "@/lib/queries";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "미디어",
 };
 
-export default function MediaPage() {
+export default async function MediaPage() {
+  const mediaItems = await getMediaItems();
+
   return (
     <div className="flex flex-col gap-6">
       <div>

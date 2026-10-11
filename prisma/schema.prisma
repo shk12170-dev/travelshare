@@ -1,0 +1,92 @@
+// TravelShare 데이터 모델
+// 스키마를 바꾼 뒤에는 `npm run db:migrate`로 마이그레이션을 만들고 클라이언트를 다시 생성하세요.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+  // Node가 ESM으로 바로 읽을 수 있게 .mts로 생성
+  generatedFileExtension = "mts"
+  importFileExtension    = "mts"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model User {
+  id             String       @id
+  nickname       String       @unique
+  bio            String       @default("")
+  avatar         String       @default("from-sky-400 to-teal-500")
+  favoriteThemes Json         @default("[]")
+  createdAt      DateTime     @default(now())
+  logs           TravelLog[]
+  media          MediaItem[]
+}
+
+model Course {
+  id         String       @id
+  title      String
+  region     String
+  duration   String
+  summary    String
+  cover      String
+  likes      Int          @default(0)
+  companions Json         @default("[]")
+  themes     Json         @default("[]")
+  stops      CourseStop[]
+  logs       TravelLog[]
+}
+
+model CourseStop {
+  id       Int    @id @default(autoincrement())
+  order    Int
+  name     String
+  note     String
+  courseId String
+  course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, order])
+}
+
+model TravelLog {
+  id        String   @id @default(cuid())
+  title     String
+  region    String
+  companion String
+  cover     String
+  excerpt   String
+  // 문단은 빈 줄(\n\n)로 구분
+  body      String
+  tips      Json     @default("[]")
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  courseId  String?
+  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt])
+}
+
+model MediaItem {
+  id        String   @id @default(cuid())
+  // photo | video | shorts
+  type      String
+  caption   String
+  region    String
+  // 샘플 데이터는 그라데이션 색상, 업로드 파일은 null
+  cover     String?
+  // storage/uploads 안의 파일 이름 (서버가 생성한 이름만 저장)
+  fileName  String?
+  mimeType  String?
+  size      Int?
+  duration  String?
+  likes     Int      @default(0)
+  createdAt DateTime @default(now())
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+}

@@ -1,4 +1,4 @@
-// 샘플 코스 데이터 (5단계에서 DB로 교체 예정)
+// 샘플 코스 데이터 (prisma/seed.mjs에서 DB에 입력)
 export const courses = [
   {
     id: "jeju-east-coast",
@@ -98,6 +98,3 @@ export const courses = [
   },
 ];
 
-export function getCourse(id) {
-  return courses.find((course) => course.id === id);
-}

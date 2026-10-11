@@ -1,20 +1,23 @@
 import Link from "next/link";
 import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
-import { currentUserId, getUser } from "@/data/users";
-import { logs } from "@/data/logs";
-import { mediaItems } from "@/data/media";
+import MediaThumb from "@/components/MediaThumb";
+import { getLogs, getMediaItems, getUser } from "@/lib/queries";
+import { CURRENT_USER_ID } from "@/lib/currentUser";
 import { themes, labelOf } from "@/data/options";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "프로필",
 };
 
-export default function ProfilePage() {
-  // 로그인 기능 전까지는 샘플 사용자를 내 계정으로 표시
-  const user = getUser(currentUserId);
-  const myLogs = logs.filter((log) => log.author === user.nickname);
-  const myMedia = mediaItems.filter((item) => item.author === user.nickname);
+export default async function ProfilePage() {
+  const [user, myLogs, myMedia] = await Promise.all([
+    getUser(CURRENT_USER_ID),
+    getLogs({ authorId: CURRENT_USER_ID }),
+    getMediaItems({ authorId: CURRENT_USER_ID }),
+  ]);
   const totalLikes = [...myLogs, ...myMedia].reduce((sum, item) => sum + item.likes, 0);
 
   return (
@@ -59,16 +62,25 @@ export default function ProfilePage() {
 
       <section>
         <h2 className="mb-4 text-xl font-bold">내 미디어</h2>
-        <ul className="grid grid-cols-3 gap-2">
-          {myMedia.map((item) => (
-            <li
-              key={item.id}
-              className={`flex aspect-square items-end rounded-xl bg-linear-to-br p-2 text-xs font-medium text-white ${item.cover}`}
-            >
-              {item.caption}
-            </li>
-          ))}
-        </ul>
+        {myMedia.length > 0 ? (
+          <ul className="grid grid-cols-3 gap-2">
+            {myMedia.map((item) => (
+              <li
+                key={item.id}
+                className="relative flex aspect-square items-end overflow-hidden rounded-xl bg-slate-800 text-xs font-medium text-white"
+              >
+                <MediaThumb item={item} />
+                <span className="pointer-events-none relative w-full bg-linear-to-t from-black/60 to-transparent p-2 pt-6">
+                  {item.caption}
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="rounded-2xl border border-dashed border-border py-10 text-center text-sm text-muted">
+            아직 올린 미디어가 없습니다.
+          </p>
+        )}
       </section>
     </div>
   );

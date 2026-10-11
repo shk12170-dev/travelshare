@@ -2,25 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
-import { courses, getCourse } from "@/data/courses";
-import { logs } from "@/data/logs";
+import { getCourse, getLogs } from "@/lib/queries";
 import { companions, themes, labelOf } from "@/data/options";
 
-export function generateStaticParams() {
-  return courses.map((course) => ({ id: course.id }));
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }) {
   const { id } = await params;
-  return { title: getCourse(id)?.title };
+  return { title: (await getCourse(id))?.title };
 }
 
 export default async function CourseDetailPage({ params }) {
   const { id } = await params;
-  const course = getCourse(id);
+  const course = await getCourse(id);
   if (!course) notFound();
 
-  const relatedLogs = logs.filter((log) => log.courseId === course.id);
+  const relatedLogs = await getLogs({ courseId: course.id });
 
   return (
     <article className="flex flex-col gap-8">

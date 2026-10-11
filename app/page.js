@@ -1,12 +1,14 @@
 import Link from "next/link";
 import CourseCard from "@/components/CourseCard";
 import LogCard from "@/components/LogCard";
-import { courses } from "@/data/courses";
-import { logs } from "@/data/logs";
+import { getCourses, getLogs } from "@/lib/queries";
 
-export default function Home() {
-  const popularCourses = [...courses].sort((a, b) => b.likes - a.likes).slice(0, 3);
-  const latestLogs = [...logs].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 3);
+// DB 내용이 바뀌면 바로 반영되도록 요청마다 렌더링
+export const dynamic = "force-dynamic";
+
+export default async function Home() {
+  const [courses, latestLogs] = await Promise.all([getCourses(), getLogs({ take: 4 })]);
+  const popularCourses = courses.slice(0, 3);
 
   return (
     <div className="flex flex-col gap-10">

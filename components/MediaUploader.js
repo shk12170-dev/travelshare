@@ -1,24 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { regions } from "@/data/options";
+import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/validation";
 
-// 업로드 전 검증 기준. 서버 저장(5단계)에서도 같은 기준을 다시 검사해야 함
-const MAX_IMAGE_MB = 10;
-const MAX_VIDEO_MB = 100;
-const MAX_FILES = 10;
-
-function validate(file) {
-  const isImage = file.type.startsWith("image/");
-  const isVideo = file.type.startsWith("video/");
-  if (!isImage && !isVideo) return "사진 또는 영상 파일만 올릴 수 있습니다.";
-  const limit = isImage ? MAX_IMAGE_MB : MAX_VIDEO_MB;
-  if (file.size > limit * 1024 * 1024) return `${isImage ? "사진" : "영상"}은 ${limit}MB 이하만 가능합니다.`;
-  return null;
-}
+const accept = Object.keys(allowedMimeTypes).join(",");
 
 export default function MediaUploader() {
+  const router = useRouter();
   const [previews, setPreviews] = useState([]);
   const [errors, setErrors] = useState([]);
+  const [caption, setCaption] = useState("");
+  const [region, setRegion] = useState("");
+  const [videoType, setVideoType] = useState("video");
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState("");
   const inputRef = useRef(null);
   const previewsRef = useRef(previews);
 
@@ -29,25 +26,29 @@ export default function MediaUploader() {
   // 화면을 떠날 때 미리보기용 blob URL 해제
   useEffect(() => () => previewsRef.current.forEach((p) => URL.revokeObjectURL(p.url)), []);
 
+  const hasVideo = previews.some((p) => p.isVideo);
+
   function handleFiles(fileList) {
     const nextErrors = [];
     const accepted = [];
     for (const file of fileList) {
-      const error = validate(file);
+      const error = validateMediaFile(file);
       if (error) nextErrors.push(`${file.name}: ${error}`);
       else accepted.push(file);
     }
-    const room = MAX_FILES - previews.length;
-    if (accepted.length > room) nextErrors.push(`한 번에 최대 ${MAX_FILES}개까지 올릴 수 있습니다.`);
+    const room = UPLOAD_LIMITS.maxFiles - previews.length;
+    if (accepted.length > room) nextErrors.push(`한 번에 최대 ${UPLOAD_LIMITS.maxFiles}개까지 올릴 수 있습니다.`);
 
     const added = accepted.slice(0, Math.max(room, 0)).map((file) => ({
       id: `${file.name}-${file.lastModified}-${Math.random()}`,
+      file,
       name: file.name,
       isVideo: file.type.startsWith("video/"),
       url: URL.createObjectURL(file),
     }));
     setPreviews((prev) => [...prev, ...added]);
     setErrors(nextErrors);
+    setMessage("");
     if (inputRef.current) inputRef.current.value = "";
   }
 
@@ -59,13 +60,50 @@ export default function MediaUploader() {
     });
   }
 
+  async function handleSubmit(e) {
+    e.preventDefault();
+    const nextErrors = [];
+    if (!caption.trim()) nextErrors.push("설명을 입력하세요.");
+    if (!region) nextErrors.push("지역을 선택하세요.");
+    if (nextErrors.length > 0) return setErrors(nextErrors);
+
+    const body = new FormData();
+    previews.forEach((p) => body.append("files", p.file));
+    body.append("caption", caption);
+    body.append("region", region);
+    body.append("videoType", videoType);
+
+    setUploading(true);
+    setErrors([]);
+    try {
+      const res = await fetch("/api/media", { method: "POST", body });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setErrors(data.errors ?? [data.error ?? "업로드에 실패했습니다."]);
+        return;
+      }
+      previews.forEach((p) => URL.revokeObjectURL(p.url));
+      setPreviews([]);
+      setCaption("");
+      setMessage(`${data.count}개를 게시했습니다.`);
+      router.refresh();
+    } catch {
+      setErrors(["네트워크 문제로 업로드하지 못했습니다."]);
+    } finally {
+      setUploading(false);
+    }
+  }
+
+  const inputClass =
+    "w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-brand";
+
   return (
     <section className="flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <h2 className="font-bold">내 미디어 올리기</h2>
           <p className="text-xs text-muted">
-            사진 {MAX_IMAGE_MB}MB, 영상 {MAX_VIDEO_MB}MB 이하 · 최대 {MAX_FILES}개
+            사진 {UPLOAD_LIMITS.imageMB}MB, 영상 {UPLOAD_LIMITS.videoMB}MB 이하 · 최대 {UPLOAD_LIMITS.maxFiles}개
           </p>
         </div>
         <label className="cursor-pointer rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white dark:text-slate-900">
@@ -73,7 +111,7 @@ export default function MediaUploader() {
           <input
             ref={inputRef}
             type="file"
-            accept="image/*,video/*"
+            accept={accept}
             multiple
             className="sr-only"
             onChange={(e) => handleFiles(e.target.files)}
@@ -81,8 +119,10 @@ export default function MediaUploader() {
         </label>
       </div>
 
+      {message && <p className="rounded-lg bg-brand-soft p-3 text-sm text-brand">{message}</p>}
+
       {errors.length > 0 && (
-        <ul className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
+        <ul role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700 dark:bg-red-950 dark:text-red-300">
           {errors.map((error) => (
             <li key={error}>{error}</li>
           ))}
@@ -90,7 +130,7 @@ export default function MediaUploader() {
       )}
 
       {previews.length > 0 && (
-        <>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
           <ul className="grid grid-cols-3 gap-2 sm:grid-cols-5">
             {previews.map((p) => (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-lg bg-black">
@@ -112,10 +152,43 @@ export default function MediaUploader() {
               </li>
             ))}
           </ul>
-          <p className="text-xs text-muted">
-            지금은 내 브라우저에서만 미리보기됩니다. 게시(서버 저장)는 다음 단계에서 연결됩니다.
-          </p>
-        </>
+
+          <div className="grid gap-3 sm:grid-cols-[1fr_10rem_10rem]">
+            <input
+              aria-label="설명"
+              className={inputClass}
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              maxLength={UPLOAD_LIMITS.captionMax}
+              placeholder="어떤 순간인가요? 예) 성산일출봉 일출"
+            />
+            <select aria-label="지역" className={inputClass} value={region} onChange={(e) => setRegion(e.target.value)}>
+              <option value="">지역 선택</option>
+              {regions.map((r) => (
+                <option key={r}>{r}</option>
+              ))}
+            </select>
+            {hasVideo && (
+              <select
+                aria-label="영상 유형"
+                className={inputClass}
+                value={videoType}
+                onChange={(e) => setVideoType(e.target.value)}
+              >
+                <option value="video">영상</option>
+                <option value="shorts">숏츠</option>
+              </select>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            disabled={uploading}
+            className="self-start rounded-full bg-brand px-5 py-2 text-sm font-semibold text-white disabled:opacity-60 dark:text-slate-900"
+          >
+            {uploading ? "올리는 중..." : `${previews.length}개 게시하기`}
+          </button>
+        </form>
       )}
     </section>
   );

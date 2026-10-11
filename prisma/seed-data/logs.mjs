@@ -1,9 +1,9 @@
-// 샘플 여행 로그 데이터 (5단계에서 DB로 교체 예정)
+// 샘플 여행 로그 데이터 (prisma/seed.mjs에서 DB에 입력)
 export const logs = [
   {
     id: "jeju-rain-day",
     title: "비 오는 날의 제주, 오히려 좋았던 이유",
-    author: "바다고양이",
+    authorId: "seacat",
     date: "2026-09-28",
     region: "제주",
     companion: "couple",
@@ -21,7 +21,7 @@ export const logs = [
   {
     id: "busan-solo-24h",
     title: "부산 혼자 24시간 먹방 기록",
-    author: "혼밥러",
+    authorId: "honbap",
     date: "2026-09-20",
     region: "부산",
     companion: "solo",
@@ -39,7 +39,7 @@ export const logs = [
   {
     id: "gyeongju-with-parents",
     title: "부모님 모시고 다녀온 경주 1박 2일",
-    author: "효도여행",
+    authorId: "hyodo",
     date: "2026-09-12",
     region: "경북",
     companion: "family",
@@ -57,7 +57,7 @@ export const logs = [
   {
     id: "jeonju-friends-weekend",
     title: "친구들과 전주에서 하루 종일 먹기만 한 날",
-    author: "먹보삼총사",
+    authorId: "meokbo",
     date: "2026-08-30",
     region: "전북",
     companion: "friends",
@@ -74,6 +74,3 @@ export const logs = [
   },
 ];
 
-export function getLog(id) {
-  return logs.find((log) => log.id === id);
-}

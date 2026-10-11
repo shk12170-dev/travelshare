@@ -1,13 +1,15 @@
 import Link from "next/link";
 import LogCard from "@/components/LogCard";
-import { logs } from "@/data/logs";
+import { getLogs } from "@/lib/queries";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "여행 로그",
 };
 
-export default function LogPage() {
-  const sorted = [...logs].sort((a, b) => b.date.localeCompare(a.date));
+export default async function LogPage() {
+  const sorted = await getLogs();
 
   return (
     <div className="flex flex-col gap-6">
