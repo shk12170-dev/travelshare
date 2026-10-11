@@ -1,0 +1,103 @@
+// 샘플 코스 데이터 (5단계에서 DB로 교체 예정)
+export const courses = [
+  {
+    id: "jeju-east-coast",
+    title: "제주 동쪽 해안 드라이브",
+    region: "제주",
+    duration: "1박 2일",
+    companions: ["couple", "friends"],
+    themes: ["nature"],
+    summary: "성산일출봉에서 시작해 우도와 월정리 해변을 잇는 바다 코스입니다.",
+    cover: "from-sky-400 to-teal-500",
+    likes: 412,
+    stops: [
+      { name: "성산일출봉", note: "일출을 보려면 오전 5시 30분 전에 도착하세요." },
+      { name: "우도", note: "전기 자전거를 빌려 섬을 한 바퀴 돌 수 있습니다." },
+      { name: "월정리 해변", note: "해 질 녘 카페 거리 산책을 추천합니다." },
+    ],
+  },
+  {
+    id: "seoul-palace-walk",
+    title: "서울 궁궐과 한옥 골목 산책",
+    region: "서울",
+    duration: "당일",
+    companions: ["solo", "family"],
+    themes: ["culture", "city"],
+    summary: "경복궁, 북촌, 익선동을 걸으며 서울의 옛 모습을 둘러봅니다.",
+    cover: "from-amber-400 to-rose-500",
+    likes: 287,
+    stops: [
+      { name: "경복궁", note: "한복을 입으면 입장료가 무료입니다." },
+      { name: "북촌 한옥마을", note: "주민 거주지이니 조용히 관람하세요." },
+      { name: "익선동", note: "골목 안 한옥 카페에서 쉬어 가세요." },
+    ],
+  },
+  {
+    id: "busan-food-tour",
+    title: "부산 시장 먹거리 투어",
+    region: "부산",
+    duration: "당일",
+    companions: ["friends", "solo"],
+    themes: ["food", "city"],
+    summary: "자갈치시장부터 국제시장, 해운대까지 부산 대표 먹거리를 맛봅니다.",
+    cover: "from-orange-400 to-red-500",
+    likes: 356,
+    stops: [
+      { name: "자갈치시장", note: "2층 식당에서 회를 바로 먹을 수 있습니다." },
+      { name: "국제시장·부평깡통시장", note: "어묵과 비빔당면은 꼭 드셔 보세요." },
+      { name: "해운대 포장마차촌", note: "밤바다를 보며 하루를 마무리하세요." },
+    ],
+  },
+  {
+    id: "gangneung-family",
+    title: "강릉 가족 바다 여행",
+    region: "강원",
+    duration: "2박 3일",
+    companions: ["family"],
+    themes: ["nature", "food"],
+    summary: "아이와 함께 걷기 좋은 해변 산책로와 순두부 맛집을 묶은 코스입니다.",
+    cover: "from-cyan-400 to-blue-600",
+    likes: 198,
+    stops: [
+      { name: "경포해변", note: "자전거 도로가 잘 되어 있어 가족 라이딩에 좋습니다." },
+      { name: "초당 순두부마을", note: "아침 일찍 가면 대기가 짧습니다." },
+      { name: "안목 커피거리", note: "바다가 보이는 2층 창가 자리를 노려 보세요." },
+    ],
+  },
+  {
+    id: "gyeongju-night",
+    title: "경주 야경과 역사 유적",
+    region: "경북",
+    duration: "1박 2일",
+    companions: ["couple", "family", "solo"],
+    themes: ["culture"],
+    summary: "불국사와 대릉원, 동궁과 월지 야경까지 천년 고도를 하루에 담습니다.",
+    cover: "from-indigo-500 to-purple-600",
+    likes: 243,
+    stops: [
+      { name: "불국사", note: "오전에 방문하면 단체 관광객을 피할 수 있습니다." },
+      { name: "대릉원·황리단길", note: "점심과 카페는 황리단길에서 해결하세요." },
+      { name: "동궁과 월지", note: "일몰 직후 조명이 켜질 때가 가장 아름답습니다." },
+    ],
+  },
+  {
+    id: "jeonju-hanok-food",
+    title: "전주 한옥마을 미식 여행",
+    region: "전북",
+    duration: "당일",
+    companions: ["friends", "couple"],
+    themes: ["food", "culture"],
+    summary: "비빔밥, 콩나물국밥, 길거리 간식으로 채우는 전주 한 바퀴 코스입니다.",
+    cover: "from-lime-400 to-emerald-600",
+    likes: 167,
+    stops: [
+      { name: "남부시장 콩나물국밥", note: "아침 식사로 든든하게 시작하세요." },
+      { name: "전주 한옥마을", note: "경기전과 전동성당이 걸어서 5분 거리입니다." },
+      { name: "남부시장 야시장", note: "금·토요일 저녁에만 열립니다." },
+    ],
+  },
+];
+
+export function getCourse(id) {
+  return courses.find((course) => course.id === id);
+}
