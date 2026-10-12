@@ -42,6 +42,22 @@
         "DATABASE_URL": "file:./prisma/verify.db",
         "UPLOAD_DIR": "storage/verify-uploads"
       }
+    },
+    {
+      "name": "travelshare-cloud",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "start",
+        "--",
+        "-p",
+        "3103"
+      ],
+      "port": 3103,
+      "env": {
+        "USE_CLOUD": "1",
+        "BETTER_AUTH_URL": "http://localhost:3103"
+      }
     }
   ]
 }
