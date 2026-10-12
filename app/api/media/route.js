@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { MediaError, createUpload, driver, finalizeUpload } from "@/lib/mediaStorage";
 import { hit, limitMessage } from "@/lib/rateLimit";
 import { getCurrentUser } from "@/lib/session";
+import { uploadAvailable } from "@/lib/features";
 import { createUploadToken, verifyUploadToken } from "@/lib/uploadToken";
 import { UPLOAD_LIMITS } from "@/lib/validation";
 import { regions } from "@/data/options";
@@ -26,6 +27,7 @@ async function readJson(request) {
 export async function POST(request) {
   const user = await getCurrentUser();
   if (!user) return fail(401, "로그인이 필요합니다.");
+  if (!uploadAvailable()) return fail(503, "사진·영상 올리기는 저장소 연결을 준비 중입니다.");
 
   const body = await readJson(request);
   const caption = String(body.caption ?? "").trim();

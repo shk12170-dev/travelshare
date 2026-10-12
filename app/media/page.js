@@ -5,6 +5,7 @@ import Pagination from "@/components/Pagination";
 import { mediaTypes } from "@/data/options";
 import { getLikedIds, getMediaPage, getUser, pageNumber } from "@/lib/queries";
 import { getCurrentUser } from "@/lib/session";
+import { uploadAvailable } from "@/lib/features";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +48,13 @@ export default async function MediaPage({ searchParams }) {
       </div>
       {!author &&
         (user ? (
-          <MediaUploader />
+          uploadAvailable() ? (
+            <MediaUploader />
+          ) : (
+            <p role="status" className="rounded-2xl border border-dashed border-border bg-surface p-4 text-sm text-muted">
+              사진·영상 올리기는 저장소 연결을 준비 중입니다. 곧 사용할 수 있어요.
+            </p>
+          )
         ) : (
           <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-border bg-surface p-4">
             <p className="text-sm text-muted">로그인하면 내 사진과 영상을 올릴 수 있어요.</p>

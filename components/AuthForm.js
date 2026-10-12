@@ -7,7 +7,8 @@ import { signIn, signUp } from "@/app/(auth)/actions";
 import { NICKNAME_LIMITS, PASSWORD_LIMITS } from "@/lib/validation";
 
 // mode: "login" | "signup"
-export default function AuthForm({ mode, next }) {
+// showForgot: 비밀번호 찾기 링크 표시 여부 (메일 발송이 가능할 때만)
+export default function AuthForm({ mode, next, showForgot = true }) {
   const isSignup = mode === "signup";
   const [state, formAction, pending] = useActionState(isSignup ? signUp : signIn, { errors: {}, values: {} });
   const { errors, values } = state;
@@ -75,7 +76,7 @@ export default function AuthForm({ mode, next }) {
         {pending ? "처리 중..." : isSignup ? "가입하기" : "로그인"}
       </button>
 
-      {!isSignup && (
+      {!isSignup && showForgot && (
         <Link href="/forgot-password" className="text-center text-sm text-muted underline-offset-2 hover:underline">
           비밀번호를 잊으셨나요?
         </Link>

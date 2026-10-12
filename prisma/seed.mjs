@@ -8,10 +8,20 @@ import { courses } from "./seed-data/courses.mjs";
 import { logs } from "./seed-data/logs.mjs";
 import { mediaItems } from "./seed-data/media.mjs";
 
-// 데모 계정의 비밀번호는 저장소에 공개되어 있으므로 실제 서비스(원격) DB에는 넣지 않음
-if (process.env.TURSO_DATABASE_URL && process.env.ALLOW_DEMO_SEED !== "1") {
+// 데모(평가자 체험) 계정 비밀번호
+// - DEMO_PASSWORD 환경 변수가 있으면 그 값 사용 (12자 이상)
+// - 없으면 저장소에 공개된 개발용 비밀번호를 쓰므로, 원격(배포) DB에서는 거부
+const remote = Boolean(process.env.TURSO_DATABASE_URL);
+const demoPassword = process.env.DEMO_PASSWORD || (remote ? null : demoAccount.password);
+
+if (process.env.DEMO_PASSWORD && process.env.DEMO_PASSWORD.length < 12) {
+  console.error("DEMO_PASSWORD는 12자 이상이어야 합니다.");
+  process.exit(1);
+}
+if (!demoPassword) {
   console.error(
-    "원격 DB(Turso)에는 데모 데이터를 넣을 수 없습니다. 비밀번호가 공개된 데모 계정이 만들어지기 때문입니다.\n" +
+    "원격 DB(Turso)에는 저장소에 공개된 데모 비밀번호로 계정을 만들 수 없습니다.\n" +
+      "평가자용 체험 계정을 만들려면 DEMO_PASSWORD(12자 이상)를 .env에 넣고 다시 실행하세요.\n" +
       "코스 데이터만 넣으려면: npm run db:seed:courses",
   );
   process.exit(1);
@@ -25,7 +35,7 @@ async function main() {
   }
 
   // 데모 계정 비밀번호 (Better Auth와 같은 방식으로 해시해서 저장)
-  const password = await hashPassword(demoAccount.password);
+  const password = await hashPassword(demoPassword);
   const credential = { providerId: "credential", accountId: demoAccount.userId, userId: demoAccount.userId };
   const existing = await prisma.account.findFirst({ where: credential, select: { id: true } });
   if (existing) await prisma.account.update({ where: { id: existing.id }, data: { password } });
@@ -51,7 +61,9 @@ async function main() {
   console.log(
     `사용자 ${users.length}, 코스 ${courses.length}, 로그 ${logs.length}, 미디어 ${mediaItems.length}건 입력 완료`,
   );
-  console.log(`데모 계정: ${demoAccount.email} (비밀번호는 prisma/seed-data/users.mjs 참고)`);
+  console.log(
+    `데모 계정: ${demoAccount.email} (비밀번호: ${process.env.DEMO_PASSWORD ? "DEMO_PASSWORD 값" : "prisma/seed-data/users.mjs 참고"})`,
+  );
 }
 
 main()

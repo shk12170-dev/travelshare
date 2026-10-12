@@ -13,7 +13,8 @@ export const e2eEnv = {
   BETTER_AUTH_SECRET: "e2e-only-secret-not-for-production-0123456789",
   // 한 PC에서 계정을 여러 개 만들므로 횟수 제한을 넉넉하게
   RATE_LIMIT_MULTIPLIER: "20",
-  // 테스트에서는 메일 대신 콘솔 출력
+  // 테스트에서는 메일 대신 콘솔 출력 (운영 빌드에서도 재설정 흐름을 확인하기 위해)
+  MAIL_CONSOLE_FALLBACK: "1",
   RESEND_API_KEY: "",
   MAIL_FROM: "",
   // 소셜 로그인 버튼·이동 확인용 가짜 키 (실제 로그인은 되지 않음)

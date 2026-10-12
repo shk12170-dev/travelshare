@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
 import { enabledSocialProviders, getAuth } from "@/lib/auth";
+import { mailAvailable } from "@/lib/features";
 import { prisma } from "@/lib/db";
 import { clientIp, hit, limitMessage } from "@/lib/rateLimit";
 import { safeReturnPath } from "@/lib/session";
@@ -126,6 +127,7 @@ export async function signInSocial(provider, next) {
 // 비밀번호 재설정 메일 요청. 가입 여부를 알 수 없도록 항상 같은 안내를 보여 줌
 export async function requestPasswordReset(prevState, formData) {
   const email = field(formData, "email").trim().toLowerCase();
+  if (!mailAvailable()) return { errors: { form: "이 사이트는 메일 발송 기능을 연결하지 않았습니다." }, values: { email } };
   const errors = validateLogin({ email, password: "-" });
   if (errors.email) return { errors, values: { email } };
 

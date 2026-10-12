@@ -70,12 +70,13 @@ npm run dev
 ### 1. Turso 만들기
 1. https://turso.tech 가입 → 데이터베이스 생성 (위치는 도쿄 `aws-ap-northeast-1` 권장)
 2. 데이터베이스 주소(`libsql://...`)와 토큰(Create Token)을 복사해 `.env`에 `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`으로 저장
-3. 테이블 만들기와 코스 데이터 넣기:
+3. 테이블 만들기와 데이터 넣기:
    ```bash
    npm run db:migrate:remote
-   npm run db:seed:courses
+   npm run db:seed            # 샘플 코스·로그·미디어 + 평가자 체험 계정 (.env의 DEMO_PASSWORD 필요)
+   # 또는 코스만: npm run db:seed:courses
    ```
-   (`npm run db:seed`는 비밀번호가 공개된 데모 계정을 만들기 때문에 원격 DB에서는 거부됩니다.)
+   원격 DB에서는 저장소에 공개된 개발용 비밀번호를 쓰지 않습니다. `DEMO_PASSWORD`(12자 이상)를 `.env`에 넣어야 체험 계정이 만들어집니다.
 
 ### 2. Cloudflare R2 만들기
 1. https://dash.cloudflare.com → R2 → 버킷 만들기 (이름 예: `travelshare-media`, 위치 힌트: 아시아 태평양)
@@ -109,6 +110,11 @@ Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭�
 3. Deploy. 사이트 주소(`https://프로젝트이름.vercel.app`)는 자동으로 인식됩니다(`BETTER_AUTH_URL` 불필요).
 4. 배포된 주소를 R2의 CORS `AllowedOrigins`에 넣기
 5. 코드를 GitHub에 push하면 자동으로 다시 배포됩니다. DB 구조를 바꿨다면 push 전에 `npm run db:migrate:remote`를 먼저 실행하세요.
+
+### 외부 서비스를 연결하지 않았을 때
+- **메일(Resend)이 없으면**: 비밀번호 찾기 화면이 "메일 발송을 연결하지 않았다"는 안내로 바뀌고 로그인 화면의 링크도 숨겨집니다.
+- **R2가 없으면(Vercel)**: 미디어 화면에 "사진·영상 올리기는 준비 중" 안내가 나옵니다. 둘러보기 등 다른 기능은 그대로 동작합니다.
+- 모든 화면 위에 "과제 제출용 데모 사이트" 안내가 표시됩니다(`components/DemoNotice.js`).
 
 ### 운영 중 알아 둘 것
 - **백업**: `npm run db:backup`은 `.env`에 Turso가 설정돼 있으면 DB 전체를 SQL 파일로 내려받습니다(`backups/db/`). 사진·영상은 R2가 보관합니다.

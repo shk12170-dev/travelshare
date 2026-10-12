@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import AuthForm from "@/components/AuthForm";
 import SocialButtons from "@/components/SocialButtons";
 import { enabledSocialProviders } from "@/lib/auth";
+import { mailAvailable } from "@/lib/features";
 import { getCurrentUser, safeReturnPath } from "@/lib/session";
 
 export const metadata = {
@@ -30,7 +31,7 @@ export default async function LoginPage({ searchParams }) {
         </p>
       )}
       <SocialButtons providers={enabledSocialProviders()} next={next} />
-      <AuthForm mode="login" next={next} />
+      <AuthForm mode="login" next={next} showForgot={mailAvailable()} />
     </div>
   );
 }

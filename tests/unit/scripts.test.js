@@ -15,14 +15,23 @@ describe("운영 스크립트", () => {
     expect(() => execFileSync(process.execPath, ["--check", file], { cwd: root, stdio: "pipe" })).not.toThrow();
   });
 
-  it("원격 DB에는 데모 시드(공개 비밀번호 계정)를 넣지 않고 오류로 종료", () => {
-    const result = spawnSync(process.execPath, ["prisma/seed.mjs"], {
+  const runSeed = (env) =>
+    spawnSync(process.execPath, ["prisma/seed.mjs"], {
       cwd: root,
       encoding: "utf8",
-      env: { ...process.env, TURSO_DATABASE_URL: "libsql://example.turso.io", ALLOW_DEMO_SEED: "" },
+      env: { ...process.env, DEMO_PASSWORD: "", ...env },
     });
+
+  it("원격 DB에는 공개된 데모 비밀번호로 계정을 만들지 않고 오류로 종료", () => {
+    const result = runSeed({ TURSO_DATABASE_URL: "libsql://example.turso.io" });
     expect(result.status).toBe(1);
-    expect(result.stderr).toContain("원격 DB(Turso)에는 데모 데이터를 넣을 수 없습니다");
-    expect(result.stderr).toContain("npm run db:seed:courses");
+    expect(result.stderr).toContain("공개된 데모 비밀번호로 계정을 만들 수 없습니다");
+    expect(result.stderr).toContain("DEMO_PASSWORD");
+  });
+
+  it("DEMO_PASSWORD가 12자 미만이면 거부", () => {
+    const result = runSeed({ TURSO_DATABASE_URL: "libsql://example.turso.io", DEMO_PASSWORD: "short" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("12자 이상");
   });
 });
