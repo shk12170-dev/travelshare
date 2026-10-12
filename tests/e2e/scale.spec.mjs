@@ -71,7 +71,7 @@ test("업로드는 허가 → 올리기 → 게시 단계마다 크기·형식·
 
   // 1단계(허가): 형식·크기·입력값 검사
   expect((await permit({ contentType: "image/png", size: 10 * MB + 1 })).status()).toBe(413);
-  expect((await permit({ contentType: "video/mp4", size: 50 * MB + 1 })).status()).toBe(413);
+  expect((await permit({ contentType: "video/mp4", size: 20 * MB + 1 })).status()).toBe(413);
   expect((await permit({ contentType: "text/html", size: 10 })).status()).toBe(415);
   expect((await permit({ contentType: "image/svg+xml", size: 10 })).status()).toBe(415);
   expect((await permit({ contentType: "image/png", size: 0 })).status()).toBe(400);

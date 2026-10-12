@@ -88,7 +88,8 @@ describe("validateMediaFile", () => {
 
   it("허용 형식과 용량", () => {
     expect(validateMediaFile(file("image/png", 1024))).toBeNull();
-    expect(validateMediaFile(file("video/mp4", 50 * 1024 * 1024))).toBeNull();
+    expect(validateMediaFile(file("video/mp4", 20 * 1024 * 1024))).toBeNull();
+    expect(validateMediaFile(file("video/mp4", 20 * 1024 * 1024 + 1))).not.toBeNull();
   });
 
   it("SVG·HTML 등 다른 형식, 용량 초과, 빈 파일은 거부", () => {

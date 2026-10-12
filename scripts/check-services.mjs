@@ -55,6 +55,7 @@ async function checkR2() {
   const missing = Object.entries({ R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET })
     .filter(([, v]) => !v)
     .map(([k]) => k);
+  if (missing.length === 4) return console.log("  - 사용하지 않음 (R2_* 미설정)");
   if (missing.length) return bad(`설정되지 않음: ${missing.join(", ")}`);
 
   const aws = new AwsClient({ accessKeyId: R2_ACCESS_KEY_ID, secretAccessKey: R2_SECRET_ACCESS_KEY, service: "s3", region: "auto" });
@@ -116,7 +117,59 @@ async function checkR2() {
   );
 }
 
+async function checkBlob() {
+  console.log("\n[Vercel Blob]");
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) return console.log("  - 사용하지 않음 (BLOB_READ_WRITE_TOKEN 미설정)");
+
+  const { put, head, del } = await import("@vercel/blob");
+  const { generateClientTokenFromReadWriteToken } = await import("@vercel/blob/client");
+  const pathname = `check/check-${Date.now()}.png`;
+  const png = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+
+  try {
+    // 1) 브라우저가 쓸 일회용 토큰 발급 (경로·형식·크기 제한)
+    const clientToken = await generateClientTokenFromReadWriteToken({
+      token,
+      pathname,
+      allowedContentTypes: ["image/png"],
+      maximumSizeInBytes: png.length,
+      validUntil: Date.now() + 300_000,
+      addRandomSuffix: false,
+    });
+    ok("일회용 업로드 토큰 발급 성공");
+
+    // 2) 그 토큰으로 업로드 (브라우저와 같은 방식)
+    const uploaded = await put(pathname, png, { access: "public", token: clientToken, contentType: "image/png" });
+    ok("일회용 토큰으로 업로드 성공");
+
+    // 3) 형식 제한이 동작하는지: 같은 토큰으로 다른 형식은 거부되어야 함
+    try {
+      await put(`${pathname}.html`, Buffer.from("<h1>x</h1>"), { access: "public", token: clientToken, contentType: "text/html" });
+      bad("허가받지 않은 경로·형식이 거부되지 않았습니다.");
+    } catch {
+      ok("허가받지 않은 경로·형식은 거부됨");
+    }
+
+    // 4) 서버 쪽 확인: 정보 조회, 공개 주소로 앞부분 읽기
+    const info = await head(pathname);
+    if (info.size === png.length) ok("파일 정보 조회(head) 성공");
+    else bad(`파일 크기가 다릅니다 (${info.size})`);
+
+    const res = await fetch(uploaded.url, { headers: { Range: "bytes=0-7" }, cache: "no-store" });
+    if (res.ok) ok("공개 주소로 읽기 성공 (저장소가 Public)");
+    else bad(`공개 주소 읽기 실패 (HTTP ${res.status})`, "Blob 저장소를 Public으로 만들었는지 확인하세요.");
+
+    // 5) 정리
+    await del(pathname);
+    ok("삭제 성공 (점검용 파일 정리 완료)");
+  } catch (error) {
+    bad(`Blob 점검 실패: ${error.message}`, "BLOB_READ_WRITE_TOKEN이 맞는지, 저장소를 Public으로 만들었는지 확인하세요.");
+  }
+}
+
 await checkTurso();
 await checkR2();
+await checkBlob();
 console.log(failed === 0 ? "\n모든 점검을 통과했습니다." : `\n${failed}개 항목에 문제가 있습니다.`);
 process.exitCode = failed === 0 ? 0 : 1;

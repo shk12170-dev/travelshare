@@ -8,6 +8,25 @@ import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/valida
 
 const accept = Object.keys(allowedMimeTypes).join(",");
 
+// 허가받은 곳으로 파일을 직접 올림. 실패하면 안내 문장, 성공하면 null
+async function sendFile(upload, file) {
+  if (upload.method === "blob") {
+    // Vercel Blob: 일회용 토큰으로 Blob 저장소에 직접 업로드 (우리 서버를 거치지 않음)
+    try {
+      const { put } = await import("@vercel/blob/client");
+      await put(upload.pathname, file, { access: "public", token: upload.token, contentType: upload.contentType });
+      return null;
+    } catch (error) {
+      console.error("Blob 업로드 실패", error);
+      return "파일을 올리지 못했습니다.";
+    }
+  }
+  const sent = await fetch(upload.url, { method: upload.method, headers: upload.headers, body: file });
+  if (sent.ok) return null;
+  const data = await sent.json().catch(() => ({}));
+  return data.errors?.[0] ?? "파일을 올리지 못했습니다.";
+}
+
 export default function MediaUploader() {
   const router = useRouter();
   const [previews, setPreviews] = useState([]);
@@ -97,10 +116,9 @@ export default function MediaUploader() {
         }
 
         const { upload, token } = permitData;
-        const sent = await fetch(upload.url, { method: upload.method, headers: upload.headers, body: file });
-        if (!sent.ok) {
-          const data = await sent.json().catch(() => ({}));
-          failed.push({ preview: p, error: data.errors?.[0] ?? "파일을 올리지 못했습니다." });
+        const sentError = await sendFile(upload, file);
+        if (sentError) {
+          failed.push({ preview: p, error: sentError });
           continue;
         }
 

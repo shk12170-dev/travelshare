@@ -1,8 +1,8 @@
 // 샘플 데이터를 DB에 넣습니다. 여러 번 실행해도 같은 결과가 되도록 upsert를 사용합니다.
-// 실행: npm run db:seed
+// 실행: npm run db:seed (로컬)  /  npm run db:seed:remote (Turso, .env의 DEMO_PASSWORD 필요)
 import "dotenv/config";
 import { hashPassword } from "better-auth/crypto";
-import { createPrismaClient } from "./client-factory.mjs";
+import { applyRemoteFlag, createPrismaClient } from "./client-factory.mjs";
 import { demoAccount, users } from "./seed-data/users.mjs";
 import { courses } from "./seed-data/courses.mjs";
 import { logs } from "./seed-data/logs.mjs";
@@ -11,7 +11,7 @@ import { mediaItems } from "./seed-data/media.mjs";
 // 데모(평가자 체험) 계정 비밀번호
 // - DEMO_PASSWORD 환경 변수가 있으면 그 값 사용 (12자 이상)
 // - 없으면 저장소에 공개된 개발용 비밀번호를 쓰므로, 원격(배포) DB에서는 거부
-const remote = Boolean(process.env.TURSO_DATABASE_URL);
+const remote = applyRemoteFlag();
 const demoPassword = process.env.DEMO_PASSWORD || (remote ? null : demoAccount.password);
 
 if (process.env.DEMO_PASSWORD && process.env.DEMO_PASSWORD.length < 12) {

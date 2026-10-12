@@ -53,7 +53,9 @@ npm run dev
 | `npm run db:seed` | 샘플 데이터 입력 (여러 번 실행해도 안전) |
 | `npm run db:studio` | DB 내용을 브라우저에서 보기 |
 | `npm run db:backup` | DB·업로드 파일 백업 (서버가 켜져 있어도 안전. Turso면 SQL로 내려받기) |
-| `npm run db:migrate:remote` | 마이그레이션을 Turso(또는 지정한 DB)에 적용 |
+| `npm run db:migrate:remote` | 마이그레이션을 Turso에 적용 |
+| `npm run db:seed:remote` | Turso에 샘플 데이터·평가자 계정 입력 (DEMO_PASSWORD 필요) |
+| `npm run db:backup:remote` | Turso DB를 SQL 파일로 백업 |
 | `npm run db:seed:courses` | 코스 데이터만 입력 (운영 DB용) |
 | `npm run check:services` | Turso·R2 연결 점검 |
 | `npm test` | 단위 테스트 (Vitest) |
@@ -73,12 +75,21 @@ npm run dev
 3. 테이블 만들기와 데이터 넣기:
    ```bash
    npm run db:migrate:remote
-   npm run db:seed            # 샘플 코스·로그·미디어 + 평가자 체험 계정 (.env의 DEMO_PASSWORD 필요)
-   # 또는 코스만: npm run db:seed:courses
+   npm run db:seed:remote     # 샘플 코스·로그·미디어 + 평가자 체험 계정 (.env의 DEMO_PASSWORD 필요)
+   # 또는 코스만: npm run db:seed:courses -- --remote
    ```
    원격 DB에서는 저장소에 공개된 개발용 비밀번호를 쓰지 않습니다. `DEMO_PASSWORD`(12자 이상)를 `.env`에 넣어야 체험 계정이 만들어집니다.
 
-### 2. Cloudflare R2 만들기
+### 2. 사진·영상 저장소 만들기 — Vercel Blob (권장, 결제 수단 불필요)
+1. Vercel 대시보드 → 프로젝트 → **Storage** → **Create** → **Blob**
+2. 접근 방식은 **Public** 선택 (브라우저가 사진 주소로 바로 볼 수 있어야 함)
+3. 프로젝트에 연결하면 `BLOB_READ_WRITE_TOKEN` 환경 변수가 자동으로 추가됩니다.
+4. PC에서 점검하려면 같은 토큰을 `.env`의 `BLOB_READ_WRITE_TOKEN`에 넣습니다(Storage → Blob → `.env.local` 탭에서 복사).
+
+무료(Hobby) 한도: 저장 1GB, 업로드 월 2,000회, 전송 월 10GB. 한도를 넘어도 청구되지 않고 30일간 사용이 멈춥니다.
+사진은 브라우저에서 줄여 올리고 영상은 20MB까지라 과제·시연 용도로는 충분합니다.
+
+### 2-1. (선택) Cloudflare R2 만들기 — 결제 수단 등록 필요, R2_* 를 넣으면 Blob 대신 R2를 사용
 1. https://dash.cloudflare.com → R2 → 버킷 만들기 (이름 예: `travelshare-media`, 위치 힌트: 아시아 태평양)
 2. **API 토큰**: R2 → API 토큰 관리 → 권한 "객체 읽기 및 쓰기", 대상은 위 버킷만 → Access Key ID / Secret Access Key 복사
 3. `.env`에 `R2_ACCOUNT_ID`(대시보드 오른쪽 계정 ID), `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_BUCKET` 저장
@@ -111,16 +122,21 @@ Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭�
 4. 배포된 주소를 R2의 CORS `AllowedOrigins`에 넣기
 5. 코드를 GitHub에 push하면 자동으로 다시 배포됩니다. DB 구조를 바꿨다면 push 전에 `npm run db:migrate:remote`를 먼저 실행하세요.
 
+### PC와 배포 환경의 구분 (실제 데이터 보호)
+- `.env`에 Turso·Blob·R2 키가 있어도 **PC의 개발 서버·테스트는 항상 로컬 파일 DB와 로컬 폴더**를 씁니다.
+- 클라우드는 **Vercel에서 실행될 때**, 또는 이름이 `:remote`로 끝나는 명령(`--remote`)을 실행할 때만 사용합니다.
+- Vercel에서 Turso 주소가 없으면 로컬로 넘어가지 않고 오류를 냅니다(잘못된 설정을 바로 알 수 있게).
+
 ### 외부 서비스를 연결하지 않았을 때
 - **메일(Resend)이 없으면**: 비밀번호 찾기 화면이 "메일 발송을 연결하지 않았다"는 안내로 바뀌고 로그인 화면의 링크도 숨겨집니다.
 - **R2가 없으면(Vercel)**: 미디어 화면에 "사진·영상 올리기는 준비 중" 안내가 나옵니다. 둘러보기 등 다른 기능은 그대로 동작합니다.
 - 모든 화면 위에 "과제 제출용 데모 사이트" 안내가 표시됩니다(`components/DemoNotice.js`).
 
 ### 운영 중 알아 둘 것
-- **백업**: `npm run db:backup`은 `.env`에 Turso가 설정돼 있으면 DB 전체를 SQL 파일로 내려받습니다(`backups/db/`). 사진·영상은 R2가 보관합니다.
+- **백업**: `npm run db:backup:remote`는 Turso DB 전체를 SQL 파일로 내려받습니다(`backups/db/`). 사진·영상은 R2가 보관합니다.
   Turso 무료 플랜의 복구 기능(하루 전까지)도 있지만 별도로 주기적으로 백업해 두세요.
 - **횟수 제한**은 DB에 기록되어 여러 서버가 나뉘어 돌아도 함께 적용됩니다. IP 확인에는 Vercel이 붙이는 `X-Forwarded-For`를 사용합니다.
-- **영상**은 변환 없이 원본 그대로 보여 주며 50MB까지입니다. 사진은 브라우저에서 긴 변 2048px로 줄여 올립니다(위치 정보도 제거됨).
+- **영상**은 변환 없이 원본 그대로 보여 주며 20MB까지입니다(무료 저장소 1GB 고려). 사진은 브라우저에서 긴 변 2048px로 줄여 올립니다(위치 정보도 제거됨).
 - **무료 한도**: R2 저장 10GB·읽기 월 1,000만 회, Turso 저장 5GB·읽기 월 5억 행, Vercel 전송 월 100GB. 한도에 가까워지면 각 대시보드에서 확인하세요.
 
 ## 운영 시 알아 둘 것 (자체 서버로 운영하는 경우)
@@ -135,7 +151,7 @@ Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭�
   서버 메모리에 기록하므로 서버를 다시 시작하면 초기화되며, 서버 한 대 기준입니다.
 - **앞단 프록시**: 운영 서버는 nginx·Caddy·Cloudflare 같은 프록시 뒤에 두세요. HTTPS 처리와 함께, IP별 횟수 제한에 쓰는
   `X-Forwarded-For` 헤더를 프록시가 설정해야 위조를 막을 수 있습니다.
-- **업로드**: 파일은 한 개씩 요청 본문 그대로 받아 디스크에 바로 씁니다(메모리 사용 일정). 사진 10MB, 영상 50MB까지.
+- **업로드**: 파일은 한 개씩 요청 본문 그대로 받아 디스크에 바로 씁니다(메모리 사용 일정). 사진 10MB, 영상 20MB까지.
 - **DB**: SQLite를 WAL 모드로 사용합니다(쓰는 중에도 읽기 가능). `prisma/*.db-wal`, `*.db-shm` 파일도 DB의 일부이니 직접 복사하지 말고 백업 명령을 쓰세요.
 - **규모가 커지면**: 서버 여러 대, 대용량 영상이 필요해지는 시점에 PostgreSQL과 클라우드 저장소(S3·R2 등)로 옮기는 것을 권장합니다.
 

@@ -1,8 +1,10 @@
 // 운영 DB용 초기 데이터: 여행 코스만 넣습니다 (사용자·로그·미디어·데모 계정은 넣지 않음).
-// 실행: npm run db:seed:courses   (여러 번 실행해도 안전)
+// 실행: npm run db:seed:courses -- --remote   (Turso에 입력, 여러 번 실행해도 안전)
 import "dotenv/config";
-import { createPrismaClient } from "./client-factory.mjs";
+import { applyRemoteFlag, createPrismaClient } from "./client-factory.mjs";
 import { courses } from "./seed-data/courses.mjs";
+
+applyRemoteFlag();
 
 const prisma = createPrismaClient();
 

@@ -15,14 +15,17 @@
     "test": "vitest run",
     "test:e2e": "playwright test",
     "db:backup": "node scripts/backup.mjs",
-    "db:migrate:remote": "node scripts/migrate.mjs",
+    "db:migrate:remote": "node scripts/migrate.mjs --remote",
     "check:services": "node scripts/check-services.mjs",
-    "db:seed:courses": "node prisma/seed-courses.mjs"
+    "db:seed:courses": "node prisma/seed-courses.mjs",
+    "db:seed:remote": "node prisma/seed.mjs --remote",
+    "db:backup:remote": "node scripts/backup.mjs --remote"
   },
   "dependencies": {
     "@libsql/client": "0.17.4",
     "@prisma/adapter-libsql": "7.10.0",
     "@prisma/client": "7.10.0",
+    "@vercel/blob": "2.8.1",
     "aws4fetch": "1.0.20",
     "better-auth": "1.7.7",
     "next": "^16.3.8",

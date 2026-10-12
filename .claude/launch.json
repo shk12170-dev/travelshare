@@ -42,26 +42,6 @@
         "DATABASE_URL": "file:./prisma/verify.db",
         "UPLOAD_DIR": "storage/verify-uploads"
       }
-    },
-    {
-      "name": "travelshare-vercel-sim",
-      "runtimeExecutable": "npm",
-      "runtimeArgs": [
-        "run",
-        "start",
-        "--",
-        "-p",
-        "3102"
-      ],
-      "port": 3102,
-      "env": {
-        "BETTER_AUTH_URL": "http://localhost:3102",
-        "DATABASE_URL": "file:./prisma/verify.db",
-        "VERCEL": "1",
-        "RESEND_API_KEY": "",
-        "MAIL_FROM": "",
-        "R2_ACCOUNT_ID": ""
-      }
     }
   ]
 }

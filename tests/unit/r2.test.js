@@ -12,6 +12,8 @@ let mediaStorage;
 const PNG_HEAD = Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
 
 beforeEach(async () => {
+  vi.stubEnv("USE_CLOUD", "1"); // 클라우드 방식으로 실행
+  vi.stubEnv("VERCEL", "");
   for (const [k, v] of Object.entries(env)) vi.stubEnv(k, v);
   vi.resetModules();
   r2 = await import("@/lib/r2");

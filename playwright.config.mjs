@@ -6,6 +6,14 @@ const PORT = 3200;
 const baseURL = `http://localhost:${PORT}`;
 
 export const e2eEnv = {
+  // 클라우드(Turso·Blob·R2) 키를 비워 .env에 키가 있어도 실제 서비스에 접속하지 않음
+  USE_CLOUD: "",
+  VERCEL: "",
+  TURSO_DATABASE_URL: "",
+  TURSO_AUTH_TOKEN: "",
+  BLOB_READ_WRITE_TOKEN: "",
+  R2_ACCOUNT_ID: "",
+  DEMO_PASSWORD: "",
   DATABASE_URL: "file:./prisma/e2e.db",
   UPLOAD_DIR: "storage/e2e-uploads",
   BETTER_AUTH_URL: baseURL,

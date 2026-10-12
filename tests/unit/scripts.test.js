@@ -15,11 +15,11 @@ describe("운영 스크립트", () => {
     expect(() => execFileSync(process.execPath, ["--check", file], { cwd: root, stdio: "pipe" })).not.toThrow();
   });
 
-  const runSeed = (env) =>
-    spawnSync(process.execPath, ["prisma/seed.mjs"], {
+  const runSeed = (env, args = ["--remote"]) =>
+    spawnSync(process.execPath, ["prisma/seed.mjs", ...args], {
       cwd: root,
       encoding: "utf8",
-      env: { ...process.env, DEMO_PASSWORD: "", ...env },
+      env: { ...process.env, DEMO_PASSWORD: "", USE_CLOUD: "", VERCEL: "", ...env },
     });
 
   it("원격 DB에는 공개된 데모 비밀번호로 계정을 만들지 않고 오류로 종료", () => {

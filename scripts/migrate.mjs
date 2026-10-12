@@ -1,15 +1,15 @@
 // DB 구조 반영: prisma/migrations 폴더의 SQL을 순서대로 적용합니다. 이미 적용한 것은 건너뜁니다.
 // Turso(원격)는 prisma migrate deploy를 직접 지원하지 않아서 이 스크립트를 씁니다.
 //
-// 실행: npm run db:migrate:remote
-//   TURSO_DATABASE_URL이 있으면 Turso에, 없으면 DATABASE_URL(로컬 파일)에 적용
+// 실행: npm run db:migrate:remote   (Turso에 적용, --remote)
+//       node scripts/migrate.mjs     (로컬 파일 DATABASE_URL에 적용)
 // 개발 중 스키마를 바꿀 때는 기존대로 npm run db:migrate (prisma migrate dev)로 마이그레이션을 만든 뒤,
 // 이 스크립트로 Turso에 반영합니다.
 import "dotenv/config";
 import { readdir, readFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@libsql/client";
-import { connectionConfig } from "../prisma/client-factory.mjs";
+import { applyRemoteFlag, connectionConfig } from "../prisma/client-factory.mjs";
 
 // SQL 파일을 문장 단위로 나눔 (따옴표 안의 ;와 -- 주석은 구분자로 취급하지 않음)
 export function splitStatements(sql) {
@@ -85,6 +85,7 @@ export async function migrate(client, migrationsDir, log = console.log) {
 
 // 직접 실행했을 때만 동작 (테스트에서 불러올 때는 실행하지 않음)
 if (import.meta.url === new URL(process.argv[1], "file://").href || process.argv[1]?.endsWith("migrate.mjs")) {
+  applyRemoteFlag();
   const { url, authToken, remote } = connectionConfig();
   console.log(`대상: ${remote ? url : `로컬 파일 ${url}`}`);
   const client = createClient({ url, authToken });

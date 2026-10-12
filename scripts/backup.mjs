@@ -4,7 +4,7 @@
 // 두 가지 방식을 자동으로 고릅니다.
 // - 로컬 파일 DB(개발·자체 서버): SQLite 백업 기능으로 일관된 사본을 만듦 (backups/db/travelshare-YYYYMMDD-HHMMSS.db)
 //   업로드 파일은 이름이 바뀌지 않으므로 새 파일만 복사 (backups/uploads/)
-// - Turso(TURSO_DATABASE_URL 설정 시): 모든 테이블을 SQL 파일로 내려받음 (backups/db/travelshare-YYYYMMDD-HHMMSS.sql)
+// - Turso(npm run db:backup:remote): 모든 테이블을 SQL 파일로 내려받음 (backups/db/travelshare-YYYYMMDD-HHMMSS.sql)
 //   파일은 R2에 있고 R2가 자체적으로 보관하므로 여기서는 복사하지 않음
 // - 오래된 DB 백업은 최근 BACKUP_KEEP개(기본 14개)만 남김
 // - 백업 위치는 BACKUP_DIR로 바꿀 수 있음. 서버 디스크가 고장 나도 남도록 다른 디스크나 클라우드 동기화 폴더를 권장
@@ -15,7 +15,9 @@ import "dotenv/config";
 import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { createClient } from "@libsql/client";
-import { connectionConfig } from "../prisma/client-factory.mjs";
+import { applyRemoteFlag, connectionConfig } from "../prisma/client-factory.mjs";
+
+applyRemoteFlag();
 
 const backupDir = path.resolve(process.env.BACKUP_DIR || "backups");
 const keep = Number(process.env.BACKUP_KEEP) || 14;
