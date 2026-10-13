@@ -3,11 +3,13 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { APIError } from "better-auth/api";
+import { verifyPassword } from "better-auth/crypto";
 import { getAuth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { hit, limitMessage } from "@/lib/rateLimit";
-import { validatePasswordChange, validateProfile } from "@/lib/validation";
+import { deleteAccountData, isProtectedAccount } from "@/lib/accountDeletion";
+import { validateAccountDelete, validatePasswordChange, validateProfile } from "@/lib/validation";
 
 const LOGIN_REQUIRED = { form: "로그인이 필요합니다." };
 
@@ -69,4 +71,49 @@ export async function changePassword(prevState, formData) {
     return { errors: { form: "처리 중 문제가 발생했습니다. 잠시 후 다시 시도하세요." } };
   }
   return { errors: {}, done: true };
+}
+
+// 계정 삭제. 비밀번호 계정은 비밀번호, 소셜 로그인 계정은 닉네임을 입력해 본인 확인
+export async function deleteAccount(prevState, formData) {
+  const values = {
+    confirmValue: String(formData.get("confirmValue") ?? ""),
+    understood: formData.get("understood") === "on",
+  };
+  const user = await getCurrentUser();
+  if (!user) return { errors: LOGIN_REQUIRED };
+
+  const errors = validateAccountDelete(values);
+  if (Object.keys(errors).length > 0) return { errors };
+
+  if (isProtectedAccount(user.email)) {
+    return { errors: { form: "샘플·체험 계정은 삭제할 수 없습니다. 새로 가입한 계정으로 시험해 주세요." } };
+  }
+
+  // 비밀번호 대입을 막기 위해 횟수 제한
+  const limit = await hit("accountDelete", user.id);
+  if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) } };
+
+  const credential = await prisma.account.findFirst({
+    where: { userId: user.id, providerId: "credential" },
+    select: { password: true },
+  });
+  if (credential?.password) {
+    const ok = await verifyPassword({ hash: credential.password, password: values.confirmValue });
+    if (!ok) return { errors: { confirmValue: "비밀번호가 올바르지 않습니다." } };
+  } else if (values.confirmValue.trim() !== user.nickname) {
+    return { errors: { confirmValue: "닉네임을 정확히 입력해 주세요." } };
+  }
+
+  try {
+    await deleteAccountData(user.id);
+  } catch (error) {
+    console.error("계정 삭제 실패", error);
+    return { errors: { form: "삭제 중 문제가 발생했습니다. 잠시 후 다시 시도하세요." } };
+  }
+
+  // 로그인 정보(쿠키)를 지움. 세션은 이미 삭제되어 실패할 수 있으나 계정은 삭제된 상태
+  try {
+    await getAuth().api.signOut({ headers: await headers() });
+  } catch {}
+  redirect("/?deleted=1");
 }

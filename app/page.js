@@ -6,12 +6,18 @@ import { getCourses, getLogs } from "@/lib/queries";
 // DB 내용이 바뀌면 바로 반영되도록 요청마다 렌더링
 export const dynamic = "force-dynamic";
 
-export default async function Home() {
+export default async function Home({ searchParams }) {
+  const { deleted } = await searchParams;
   const [courses, latestLogs] = await Promise.all([getCourses(), getLogs({ take: 4 })]);
   const popularCourses = courses.slice(0, 3);
 
   return (
     <div className="flex flex-col gap-10">
+      {deleted && (
+        <p role="status" className="rounded-lg bg-brand-soft p-3 text-sm text-brand">
+          계정과 모든 데이터를 삭제했습니다. 이용해 주셔서 감사합니다.
+        </p>
+      )}
       <section className="rounded-3xl bg-linear-to-br from-teal-700 to-sky-700 px-6 py-10 text-white md:px-10 md:py-14">
         <h1 className="text-2xl font-bold leading-snug md:text-4xl">
           누구와 떠나든,

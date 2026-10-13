@@ -9,7 +9,7 @@ const collected = [
   ["이메일 주소", "로그인과 계정 구분", "계정을 삭제할 때까지"],
   ["닉네임", "다른 사용자에게 표시되는 이름", "계정을 삭제할 때까지"],
   ["비밀번호", "로그인 확인. 원문은 저장하지 않고 한 방향으로 암호화한 값만 저장", "계정을 삭제할 때까지"],
-  ["로그인 기록(접속 IP, 브라우저 정보, 시각)", "로그인 유지와 부정 사용 방지", "로그인 세션이 끝나면 삭제"],
+  ["로그인 기록(접속 IP, 브라우저 정보, 시각)", "로그인 유지와 부정 사용 방지", "로그인 세션이 끝나거나 계정을 삭제할 때까지"],
   ["작성한 로그·댓글·좋아요, 올린 사진·영상", "서비스 기능 제공. 공개 화면에 표시됨", "직접 삭제하거나 계정을 삭제할 때까지"],
 ];
 
@@ -40,8 +40,22 @@ export default function PrivacyPage() {
         <h2 id="collect" className="text-lg font-bold">
           수집하는 정보
         </h2>
-        <div className="mt-3 overflow-x-auto">
-          <table className="w-full min-w-[32rem] border-collapse text-left text-sm">
+        {/* 휴대폰에서는 항목별 카드, 넓은 화면에서는 표로 보여 줌 */}
+        <ul className="mt-3 flex flex-col gap-3 md:hidden">
+          {collected.map(([item, purpose, keep]) => (
+            <li key={item} className="rounded-xl border border-border bg-surface p-3 text-sm">
+              <p className="font-semibold">{item}</p>
+              <dl className="mt-1.5 grid grid-cols-[4.5rem_1fr] gap-x-2 gap-y-1 text-muted">
+                <dt>목적</dt>
+                <dd>{purpose}</dd>
+                <dt>보관</dt>
+                <dd>{keep}</dd>
+              </dl>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-3 hidden md:block">
+          <table className="w-full border-collapse text-left text-sm">
             <caption className="sr-only">수집 항목, 이용 목적, 보관 기간</caption>
             <thead>
               <tr className="border-b border-border">
@@ -65,15 +79,19 @@ export default function PrivacyPage() {
 
       <section aria-labelledby="uses">
         <h2 id="uses" className="text-lg font-bold">
-          이용 방식과 제3자
+          정보의 사용과 외부 서비스
         </h2>
         <ul className="mt-2 list-disc pl-5 text-sm">
-          <li>수집한 정보는 위 목적 외에 사용하지 않으며 광고나 분석에 쓰지 않습니다.</li>
+          <li>수집한 정보는 위 목적에만 사용하며, 광고나 통계 분석에는 사용하지 않습니다.</li>
           <li>
-            서비스 운영을 위해 호스팅(Vercel), 데이터베이스(Turso), 파일 저장소(Vercel Blob)에 정보가 저장됩니다.
-            이 서비스들은 일본 도쿄 지역을 사용합니다.
+            사이트를 운영하기 위해 아래 외부 서비스에 정보가 저장됩니다. 서버는 모두 일본 도쿄 지역에 있습니다.
+            <ul className="mt-1 list-[circle] pl-5 text-muted">
+              <li>Vercel: 사이트 실행(호스팅)</li>
+              <li>Turso: 회원 정보와 글·댓글 등 데이터베이스</li>
+              <li>Vercel Blob: 올린 사진·영상 파일</li>
+            </ul>
           </li>
-          <li>이 사이트는 쿠키를 로그인 상태 유지에만 사용합니다. 광고·추적 쿠키는 쓰지 않습니다.</li>
+          <li>쿠키는 로그인 상태를 유지하는 데에만 사용하며, 광고·추적용 쿠키는 사용하지 않습니다.</li>
         </ul>
       </section>
 
@@ -94,15 +112,21 @@ export default function PrivacyPage() {
           삭제 요청
         </h2>
         <p className="mt-2 text-sm">
-          올린 글과 사진은 각 화면의 삭제 버튼으로 직접 지울 수 있습니다. 계정 삭제 기능은 아직 제공하지 않습니다.
-          계정과 모든 데이터의 삭제를 원하시면 소스 저장소의{" "}
+          로그인한 뒤 <Link href="/profile/edit" className="font-medium text-brand underline-offset-2 hover:underline">프로필 수정</Link>{" "}
+          화면 맨 아래의 <strong>계정 삭제</strong>에서 직접 삭제할 수 있습니다. 계정을 삭제하면 이메일·닉네임·비밀번호와 내가 쓴
+          글·댓글·좋아요, 올린 사진·영상이 모두 지워지며 되돌릴 수 없습니다. 개별 글과 사진은 각 화면의 삭제 버튼으로 지울 수
+          있습니다.
+        </p>
+        <p className="mt-2 text-sm">
+          비밀번호를 잊어 로그인할 수 없는 경우에는 소스 저장소의{" "}
           <a
             href="https://github.com/shk12170-dev/travelshare/issues"
             className="font-medium text-brand underline-offset-2 hover:underline"
           >
             이슈
           </a>
-          로 요청해 주세요.
+          로 계정 삭제를 요청해 주세요. 가입한 이메일 주소를 함께 알려 주셔야 본인 확인 후 삭제할 수 있습니다(이슈는 공개되므로
+          이메일 일부만 적어도 됩니다).
         </p>
       </section>
 

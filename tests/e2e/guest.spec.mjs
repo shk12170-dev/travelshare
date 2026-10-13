@@ -70,6 +70,7 @@ test.describe("로그인하지 않은 방문자", () => {
     await page.getByRole("main").getByRole("link", { name: "이용 안내·개인정보 처리" }).click();
     await expect(page).toHaveURL(/\/privacy$/);
     await expect(page.getByRole("heading", { level: 1, name: "이용 안내·개인정보 처리" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "수집하는 정보" })).toBeVisible();
     await expect(page.getByRole("table")).toContainText("이메일 주소");
 
     await page.goto("/course");
