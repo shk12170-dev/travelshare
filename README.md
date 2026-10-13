@@ -8,7 +8,16 @@
 - 댓글, 좋아요(코스 찜), 통합 검색
 - 이메일 회원가입·로그인, 소셜 로그인(Google·카카오, 키 설정 시), 비밀번호 재설정, 프로필 수정
 
-이메일 회원가입·로그인을 지원하며, 로그인한 사용자만 로그 작성과 미디어 업로드를 할 수 있고 본인 글만 수정·삭제할 수 있습니다. 데이터는 SQLite DB에 저장됩니다. 진행 상황과 단계별 계획은 [작업계획.md](작업계획.md)를 참고하세요.
+## 배포 주소
+
+**https://travelshare-shk.vercel.app**
+
+과제 제출용 데모 사이트입니다(Vercel + Turso + Vercel Blob, 무료 플랜). 회원가입으로 새 계정을 만들면 모든 기능을 써 볼 수 있습니다.
+실제 개인정보는 입력하지 마세요.
+
+이메일 회원가입·로그인을 지원하며, 로그인한 사용자만 로그 작성과 미디어 업로드를 할 수 있고 본인 글만 수정·삭제할 수 있습니다.
+개발 환경에서는 로컬 SQLite 파일에, 배포 환경에서는 Turso(DB)와 Vercel Blob(사진·영상)에 저장됩니다.
+진행 상황과 단계별 계획은 [작업계획.md](작업계획.md), 과제 제출 자료는 [docs/aleph](docs/aleph)를 참고하세요.
 
 ## 기술 스택
 
@@ -97,7 +106,7 @@ npm run dev
    ```json
    [
      {
-       "AllowedOrigins": ["https://프로젝트이름.vercel.app", "http://localhost:3000"],
+       "AllowedOrigins": ["https://travelshare-shk.vercel.app", "http://localhost:3000"],
        "AllowedMethods": ["PUT"],
        "AllowedHeaders": ["content-type"],
        "MaxAgeSeconds": 3600
@@ -118,7 +127,7 @@ Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭�
 2. Environment Variables에 `.env`의 `TURSO_*`, `R2_*`와 아래 값을 추가
    - `BETTER_AUTH_SECRET`: 32자 이상 무작위 값 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`)
    - (선택) `RESEND_API_KEY`, `MAIL_FROM`, 소셜 로그인 키
-3. Deploy. 사이트 주소(`https://프로젝트이름.vercel.app`)는 자동으로 인식됩니다(`BETTER_AUTH_URL` 불필요).
+3. Deploy. 사이트 주소(예: `https://travelshare-shk.vercel.app`)는 자동으로 인식됩니다(`BETTER_AUTH_URL` 불필요).
 4. 배포된 주소를 R2의 CORS `AllowedOrigins`에 넣기
 5. 코드를 GitHub에 push하면 자동으로 다시 배포됩니다. DB 구조를 바꿨다면 push 전에 `npm run db:migrate:remote`를 먼저 실행하세요.
 
