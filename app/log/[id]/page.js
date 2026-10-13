@@ -35,7 +35,7 @@ export default async function LogDetailPage({ params }) {
 
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-6">
-      <Link href="/log" className="text-sm text-muted hover:text-foreground">
+      <Link href="/log" className="inline-block self-start py-1.5 text-sm text-muted hover:text-foreground">
         ← 로그 목록
       </Link>
 

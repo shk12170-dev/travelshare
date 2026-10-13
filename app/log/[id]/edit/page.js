@@ -38,7 +38,7 @@ export default async function EditLogPage({ params }) {
 
   return (
     <div className="mx-auto flex max-w-2xl flex-col gap-6">
-      <Link href={`/log/${id}`} className="text-sm text-muted hover:text-foreground">
+      <Link href={`/log/${id}`} className="inline-block self-start py-1.5 text-sm text-muted hover:text-foreground">
         ← 로그로 돌아가기
       </Link>
       <h1 className="text-2xl font-bold">여행 로그 수정</h1>

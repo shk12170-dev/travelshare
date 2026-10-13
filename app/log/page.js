@@ -57,14 +57,14 @@ export default async function LogPage({ searchParams }) {
               <Link
                 href="/log"
                 aria-current={followingFeed ? undefined : "page"}
-                className={`rounded-full border px-3 py-1 ${followingFeed ? "border-border text-muted" : "border-brand bg-brand-soft text-brand"}`}
+                className={`rounded-full border px-4 py-1.5 ${followingFeed ? "border-border text-muted" : "border-brand bg-brand-soft text-brand"}`}
               >
                 전체
               </Link>
               <Link
                 href="/log?feed=following"
                 aria-current={followingFeed ? "page" : undefined}
-                className={`rounded-full border px-3 py-1 ${followingFeed ? "border-brand bg-brand-soft text-brand" : "border-border text-muted"}`}
+                className={`rounded-full border px-4 py-1.5 ${followingFeed ? "border-brand bg-brand-soft text-brand" : "border-border text-muted"}`}
               >
                 팔로잉
               </Link>

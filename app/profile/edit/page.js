@@ -29,7 +29,7 @@ export default async function EditProfilePage() {
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-8">
-      <Link href="/profile" className="text-sm text-muted hover:text-foreground">
+      <Link href="/profile" className="inline-block self-start py-1.5 text-sm text-muted hover:text-foreground">
         ← 프로필
       </Link>
 

@@ -61,7 +61,7 @@ export default function MediaGallery({ items, currentUserId, likedIds = [] }) {
                   onClick={() => handleDelete(item)}
                   disabled={deletingId === item.id}
                   aria-label={`${item.caption} 삭제`}
-                  className="absolute right-2 top-2 z-10 h-7 w-7 rounded-full bg-black/50 text-xs text-white hover:bg-red-600 disabled:opacity-60"
+                  className="absolute right-2 top-2 z-10 h-9 w-9 rounded-full bg-black/50 text-xs text-white hover:bg-red-600 disabled:opacity-60"
                 >
                   ✕
                 </button>

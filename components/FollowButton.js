@@ -44,7 +44,7 @@ export default function FollowButton({ targetUserId, nickname, initialFollowing,
           disabled={pending}
           aria-pressed={following}
           aria-label={`${nickname} ${following ? "팔로잉 중, 팔로우 취소" : "팔로우"}`}
-          className={`rounded-full border px-3.5 py-1 text-sm font-medium transition-colors ${
+          className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
             following
               ? "border-brand bg-brand-soft text-brand"
               : "border-border text-foreground hover:bg-brand-soft"

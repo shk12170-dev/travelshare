@@ -38,7 +38,7 @@ export default function LikeButton({ targetType, targetId, initialLiked, initial
 
   const style =
     variant === "overlay"
-      ? `rounded-full bg-black/45 px-2.5 py-1 text-xs text-white hover:bg-black/60 ${liked ? "text-rose-300" : ""}`
+      ? `rounded-full bg-black/45 px-3 py-1.5 text-xs text-white hover:bg-black/60 ${liked ? "text-rose-300" : ""}`
       : `rounded-full border px-4 py-1.5 text-sm transition-colors ${
           liked
             ? "border-rose-300 bg-rose-50 text-rose-600 dark:border-rose-800 dark:bg-rose-950 dark:text-rose-300"

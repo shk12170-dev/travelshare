@@ -83,7 +83,7 @@ export default function LogPhotoPicker({ initialPhotos = [], onBusyChange }) {
                 type="button"
                 onClick={() => remove(photo)}
                 aria-label={`${photo.name ?? "사진"} 빼기`}
-                className="absolute right-1 top-1 h-6 w-6 rounded-full bg-black/60 text-xs text-white"
+                className="absolute right-1 top-1 h-8 w-8 rounded-full bg-black/60 text-xs text-white"
               >
                 ✕
               </button>

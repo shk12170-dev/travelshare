@@ -25,7 +25,7 @@ export default async function CourseDetailPage({ params }) {
 
   return (
     <article className="flex flex-col gap-8">
-      <Link href="/course" className="text-sm text-muted hover:text-foreground">
+      <Link href="/course" className="inline-block self-start py-1.5 text-sm text-muted hover:text-foreground">
         ← 코스 목록
       </Link>
 
