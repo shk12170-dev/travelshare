@@ -42,7 +42,9 @@ async function main() {
   else await prisma.account.create({ data: { ...credential, id: `seed-${demoAccount.userId}`, password } });
 
   for (const { stops, ...course } of courses) {
-    await prisma.course.upsert({ where: { id: course.id }, update: course, create: course });
+    // 다시 실행해도 사용자가 누른 좋아요 수는 유지 (likes는 처음 만들 때만 사용)
+    const { likes: _courseLikes, ...courseRest } = course;
+    await prisma.course.upsert({ where: { id: course.id }, update: courseRest, create: course });
     await prisma.courseStop.deleteMany({ where: { courseId: course.id } });
     await prisma.courseStop.createMany({
       data: stops.map((stop, index) => ({ ...stop, order: index + 1, courseId: course.id })),
@@ -51,11 +53,13 @@ async function main() {
 
   for (const { date, body, ...log } of logs) {
     const data = { ...log, body: body.join("\n\n"), createdAt: new Date(`${date}T09:00:00+09:00`) };
-    await prisma.travelLog.upsert({ where: { id: log.id }, update: data, create: data });
+    const { likes: _logLikes, ...logRest } = data;
+    await prisma.travelLog.upsert({ where: { id: log.id }, update: logRest, create: data });
   }
 
   for (const item of mediaItems) {
-    await prisma.mediaItem.upsert({ where: { id: item.id }, update: item, create: item });
+    const { likes: _mediaLikes, ...itemRest } = item;
+    await prisma.mediaItem.upsert({ where: { id: item.id }, update: itemRest, create: item });
   }
 
   console.log(

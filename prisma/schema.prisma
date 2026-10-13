@@ -99,6 +99,9 @@ model CourseStop {
   order    Int
   name     String
   note     String
+  // 지도에 표시할 대략적인 위치 (없으면 지도에서 제외)
+  lat      Float?
+  lng      Float?
   courseId String
   course   Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 

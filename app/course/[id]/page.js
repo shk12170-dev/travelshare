@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
 import LikeButton from "@/components/LikeButton";
+import CourseMap from "@/components/CourseMap";
 import { getCurrentUser } from "@/lib/session";
 import { getCourse, getLikedIds, getLogs } from "@/lib/queries";
 import { companions, themes, labelOf } from "@/data/options";
@@ -54,6 +55,8 @@ export default async function CourseDetailPage({ params }) {
           <Tag key={c}>{labelOf(companions, c)}</Tag>
         ))}
       </div>
+
+      <CourseMap stops={course.stops} />
 
       <section>
         <h2 className="mb-4 text-xl font-bold">코스 순서</h2>

@@ -48,3 +48,19 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
 }
+
+/* 코스 지도의 번호 마커 */
+.ts-marker {
+  display: flex;
+  width: 28px;
+  height: 28px;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #fff;
+  border-radius: 9999px;
+  background: #0f766e;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+}
