@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import AuthForm from "@/components/AuthForm";
 import SocialButtons from "@/components/SocialButtons";
@@ -20,6 +21,10 @@ export default async function SignupPage({ searchParams }) {
       </div>
       <SocialButtons providers={enabledSocialProviders()} next={next} />
       <AuthForm mode="signup" next={next} />
+      <p className="text-center text-xs text-muted">
+        가입하면 <Link href="/privacy" className="font-medium text-brand">이용 안내·개인정보 처리</Link>에 동의한 것으로
+        봅니다. 데모 사이트이므로 실제 이메일이 아니어도 됩니다.
+      </p>
     </div>
   );
 }

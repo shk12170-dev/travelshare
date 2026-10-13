@@ -65,6 +65,18 @@ test.describe("로그인하지 않은 방문자", () => {
     await expect(page).toHaveURL(/\/login\?next=%2Fcourse%2Fjeju-east-coast/);
   });
 
+  test("이용 안내 화면이 모든 화면의 안내 줄과 가입 화면에서 연결된다", async ({ page }) => {
+    await page.goto("/signup");
+    await page.getByRole("main").getByRole("link", { name: "이용 안내·개인정보 처리" }).click();
+    await expect(page).toHaveURL(/\/privacy$/);
+    await expect(page.getByRole("heading", { level: 1, name: "이용 안내·개인정보 처리" })).toBeVisible();
+    await expect(page.getByRole("table")).toContainText("이메일 주소");
+
+    await page.goto("/course");
+    await page.getByRole("note").getByRole("link", { name: "이용 안내" }).click();
+    await expect(page).toHaveURL(/\/privacy$/);
+  });
+
   test("로그인 후 외부 주소로 이동하지 않는다", async ({ page }) => {
     await page.goto("/login?next=https%3A%2F%2Fevil.example");
     await expect(page.locator('input[name="next"]')).toHaveValue("/");

@@ -11,7 +11,7 @@ async function expectNoSeriousViolations(page) {
   expect(serious, serious.join("\n")).toEqual([]);
 }
 
-const guestPages = ["/", "/course", "/course/jeju-east-coast", "/log", "/log/jeju-rain-day", "/media", "/search?q=제주", "/login", "/signup", "/forgot-password"];
+const guestPages = ["/", "/course", "/course/jeju-east-coast", "/log", "/log/jeju-rain-day", "/media", "/search?q=제주", "/login", "/signup", "/forgot-password", "/privacy"];
 
 for (const path of guestPages) {
   test(`접근성: ${path}`, async ({ page }) => {
