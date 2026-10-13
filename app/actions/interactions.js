@@ -47,6 +47,32 @@ export async function toggleLike(targetType, targetId) {
   }
 }
 
+// 팔로우 누르기/취소. 결과: { following, followers } 또는 { error }
+export async function toggleFollow(targetUserId) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "로그인이 필요합니다." };
+  if (typeof targetUserId !== "string") return { error: "잘못된 요청입니다." };
+  if (targetUserId === user.id) return { error: "자기 자신은 팔로우할 수 없습니다." };
+  const limit = await hit("follow", user.id);
+  if (!limit.ok) return { error: limitMessage(limit.retryAfterSec) };
+
+  try {
+    const target = await prisma.user.findUnique({ where: { id: targetUserId }, select: { id: true } });
+    if (!target) return { error: "없는 사용자입니다." };
+
+    const key = { followerId_followingId: { followerId: user.id, followingId: targetUserId } };
+    const existing = await prisma.follow.findUnique({ where: key });
+    if (existing) await prisma.follow.delete({ where: key });
+    else await prisma.follow.create({ data: { followerId: user.id, followingId: targetUserId } });
+    const followers = await prisma.follow.count({ where: { followingId: targetUserId } });
+    return { following: !existing, followers };
+  } catch (error) {
+    // 동시에 두 번 눌러 이미 처리된 경우 등
+    console.error("팔로우 처리 실패", error);
+    return { error: "잠시 후 다시 시도하세요." };
+  }
+}
+
 // 사용: addComment.bind(null, logId)
 export async function addComment(logId, prevState, formData) {
   const body = String(formData.get("body") ?? "");

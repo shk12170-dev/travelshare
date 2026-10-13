@@ -3,7 +3,7 @@ import Tag from "@/components/Tag";
 import LogCard from "@/components/LogCard";
 import CourseCard from "@/components/CourseCard";
 import MediaThumb from "@/components/MediaThumb";
-import { getLikedCourses, getLogs, getMediaItems, getUser, getUserStats } from "@/lib/queries";
+import { getFollowCounts, getLikedCourses, getLogs, getMediaItems, getUser, getUserStats } from "@/lib/queries";
 import { requireUser } from "@/lib/session";
 import { themes, labelOf } from "@/data/options";
 
@@ -16,12 +16,13 @@ export const metadata = {
 export default async function ProfilePage({ searchParams }) {
   const { id } = await requireUser("/profile");
   const { updated } = await searchParams;
-  const [user, myLogs, myMedia, likedCourses, stats] = await Promise.all([
+  const [user, myLogs, myMedia, likedCourses, stats, followCounts] = await Promise.all([
     getUser(id),
     getLogs({ authorId: id, take: 6 }),
     getMediaItems({ authorId: id, take: 12 }),
     getLikedCourses(id),
     getUserStats(id),
+    getFollowCounts(id),
   ]);
   const favoriteThemes = Array.isArray(user.favoriteThemes) ? user.favoriteThemes : [];
 
@@ -37,6 +38,9 @@ export default async function ProfilePage({ searchParams }) {
         <div className="flex flex-1 flex-col gap-2">
           <h1 className="text-xl font-bold">{user.nickname}</h1>
           <p className="text-sm text-muted">{user.bio || "아직 소개가 없습니다."}</p>
+          <p className="text-xs text-muted">
+            팔로워 {followCounts.followers} · 팔로잉 {followCounts.following}
+          </p>
           <div className="flex flex-wrap justify-center gap-1.5 sm:justify-start">
             {favoriteThemes.map((id) => (
               <Tag key={id}>{labelOf(themes, id)}</Tag>

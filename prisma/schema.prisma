@@ -31,6 +31,8 @@ model User {
   accounts       Account[]
   comments       Comment[]
   likes          Like[]
+  following      Follow[]    @relation("Following")
+  followers      Follow[]    @relation("Followers")
 }
 
 // 로그인 세션 (Better Auth)
@@ -193,4 +195,16 @@ model RateLimit {
   key     String @id
   count   Int
   resetAt BigInt
+}
+
+// 팔로우: followerId 사용자가 followingId 사용자를 팔로우
+model Follow {
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+  follower    User     @relation("Following", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("Followers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@id([followerId, followingId])
+  @@index([followingId])
 }

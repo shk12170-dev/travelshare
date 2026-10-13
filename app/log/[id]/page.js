@@ -4,9 +4,10 @@ import Tag from "@/components/Tag";
 import DeleteButton from "@/components/DeleteButton";
 import LikeButton from "@/components/LikeButton";
 import CommentSection from "@/components/CommentSection";
+import FollowButton from "@/components/FollowButton";
 import { deleteLog } from "@/app/log/actions";
 import { getCurrentUser } from "@/lib/session";
-import { getCourse, getLikedIds, getLog } from "@/lib/queries";
+import { getCourse, getFollowCounts, getLikedIds, getLog, isFollowing } from "@/lib/queries";
 import { companions, labelOf } from "@/data/options";
 
 export const dynamic = "force-dynamic";
@@ -27,6 +28,10 @@ export default async function LogDetailPage({ params }) {
   ]);
   const isOwner = user?.id === log.authorId;
   const liked = (await getLikedIds(user?.id, "log", [log.id])).has(log.id);
+  const [following, followCounts] = await Promise.all([
+    isFollowing(user?.id, log.authorId),
+    getFollowCounts(log.authorId),
+  ]);
 
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-6">
@@ -64,10 +69,23 @@ export default async function LogDetailPage({ params }) {
           <Tag>{labelOf(companions, log.companion)}</Tag>
           <span>{log.region}</span>
           <span>·</span>
-          <span>{log.author}</span>
+          <Link href={`/log?author=${log.authorId}`} className="font-medium text-foreground hover:text-brand">
+            {log.author}
+          </Link>
           <span>·</span>
           <time dateTime={log.date}>{log.date}</time>
         </div>
+        {!isOwner && (
+          <div className="mt-3">
+            <FollowButton
+              targetUserId={log.authorId}
+              nickname={log.author}
+              initialFollowing={following}
+              initialFollowers={followCounts.followers}
+              loggedIn={Boolean(user)}
+            />
+          </div>
+        )}
         <h1 className="mt-3 text-2xl font-bold leading-snug md:text-3xl">{log.title}</h1>
         <div className="mt-4 flex flex-wrap items-start justify-between gap-2">
           <LikeButton
