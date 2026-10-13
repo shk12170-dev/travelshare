@@ -34,12 +34,15 @@ async function main() {
     await prisma.user.upsert({ where: { id: user.id }, update: user, create: user });
   }
 
-  // 데모 계정 비밀번호 (Better Auth와 같은 방식으로 해시해서 저장)
+  // 샘플 사용자 전원의 비밀번호 (Better Auth와 같은 방식으로 해시해서 저장)
+  // 평가자가 어느 샘플 계정으로도 로그인해 볼 수 있도록 같은 비밀번호를 사용
   const password = await hashPassword(demoPassword);
-  const credential = { providerId: "credential", accountId: demoAccount.userId, userId: demoAccount.userId };
-  const existing = await prisma.account.findFirst({ where: credential, select: { id: true } });
-  if (existing) await prisma.account.update({ where: { id: existing.id }, data: { password } });
-  else await prisma.account.create({ data: { ...credential, id: `seed-${demoAccount.userId}`, password } });
+  for (const user of users) {
+    const credential = { providerId: "credential", accountId: user.id, userId: user.id };
+    const existing = await prisma.account.findFirst({ where: credential, select: { id: true } });
+    if (existing) await prisma.account.update({ where: { id: existing.id }, data: { password } });
+    else await prisma.account.create({ data: { ...credential, id: `seed-${user.id}`, password } });
+  }
 
   for (const { stops, ...course } of courses) {
     // 다시 실행해도 사용자가 누른 좋아요 수는 유지 (likes는 처음 만들 때만 사용)
