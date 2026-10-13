@@ -34,7 +34,30 @@ export default async function LogDetailPage({ params }) {
         ← 로그 목록
       </Link>
 
-      <div className={`h-48 rounded-3xl bg-linear-to-br md:h-64 ${log.cover}`} />
+      {log.photos.length > 0 ? (
+        <section aria-label="첨부한 사진" className="flex flex-col gap-2">
+          {/* 사용자가 올린 사진 주소(저장소로 이동)라 일반 img 사용 */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={log.photos[0].src} alt={`${log.title} 사진 1`} className="max-h-96 w-full rounded-3xl object-cover" />
+          {log.photos.length > 1 && (
+            <ul className="grid grid-cols-4 gap-2">
+              {log.photos.slice(1).map((photo, index) => (
+                <li key={photo.id} className="aspect-square overflow-hidden rounded-xl bg-slate-800">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={photo.src}
+                    alt={`${log.title} 사진 ${index + 2}`}
+                    loading="lazy"
+                    className="h-full w-full object-cover"
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ) : (
+        <div className={`h-48 rounded-3xl bg-linear-to-br md:h-64 ${log.cover}`} />
+      )}
 
       <header>
         <div className="flex flex-wrap items-center gap-2 text-sm text-muted">

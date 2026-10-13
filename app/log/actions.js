@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { getCurrentUser } from "@/lib/session";
 import { hit, limitMessage } from "@/lib/rateLimit";
 import { splitTips, validateLog } from "@/lib/validation";
+import { cleanupOldDrafts, parseMediaIds, prepareLogDeletion, syncLogPhotos } from "@/lib/logPhotos";
 
 const covers = [
   "from-sky-400 to-teal-500",
@@ -25,10 +26,12 @@ function readForm(formData) {
     companion: field("companion"),
     body: field("body"),
     tips: field("tips"),
+    mediaIds: field("mediaIds"),
   };
 }
 
 function toData(values) {
+  // mediaIds(첨부 사진 목록)는 로그 자체의 필드가 아니므로 제외
   const body = values.body.trim().replace(/\r\n/g, "\n");
   return {
     title: values.title.trim(),
@@ -75,6 +78,20 @@ export async function createLog(prevState, formData) {
   }
 
   // redirect는 예외로 동작하므로 try 블록 밖에서 호출
+  // 첨부 사진 연결과 오래된 임시 사진 정리. 실패해도 로그 저장은 유지
+  try {
+    await syncLogPhotos({
+      logId: log.id,
+      userId: user.id,
+      title: log.title,
+      region: log.region,
+      mediaIds: parseMediaIds(values.mediaIds),
+    });
+    await cleanupOldDrafts(user.id);
+  } catch (error) {
+    console.error("사진 연결 실패", error);
+  }
+
   redirect(`/log/${log.id}`);
 }
 
@@ -91,7 +108,15 @@ export async function updateLog(logId, prevState, formData) {
   if (!limit.ok) return { errors: { form: limitMessage(limit.retryAfterSec) }, values };
 
   try {
-    await prisma.travelLog.update({ where: { id: logId }, data: toData(values) });
+    const data = toData(values);
+    await prisma.travelLog.update({ where: { id: logId }, data });
+    await syncLogPhotos({
+      logId,
+      userId: user.id,
+      title: data.title,
+      region: data.region,
+      mediaIds: parseMediaIds(values.mediaIds),
+    });
   } catch (error) {
     console.error("로그 수정 실패", error);
     return { errors: { form: "저장 중 문제가 발생했습니다. 잠시 후 다시 시도하세요." }, values };
@@ -105,10 +130,13 @@ export async function deleteLog(logId) {
   const { error } = await checkOwner(logId);
   if (error) return { errors: error };
 
-  // 댓글은 함께 삭제되고(Cascade), 좋아요 기록은 직접 정리
+  // 댓글과 첨부 사진 기록은 함께 삭제되고(Cascade), 좋아요 기록은 직접 정리. 사진 파일은 DB 삭제 뒤에 지움
+  const { likeDeletion, cleanup } = await prepareLogDeletion(logId);
   await prisma.$transaction([
+    ...likeDeletion,
     prisma.like.deleteMany({ where: { targetType: "log", targetId: logId } }),
     prisma.travelLog.delete({ where: { id: logId } }),
   ]);
+  await cleanup();
   redirect("/log");
 }

@@ -3,29 +3,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { regions } from "@/data/options";
-import { shrinkImage } from "@/lib/clientImage";
+import { UploadFailure, uploadFile } from "@/lib/uploadClient";
 import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/validation";
 
 const accept = Object.keys(allowedMimeTypes).join(",");
-
-// 허가받은 곳으로 파일을 직접 올림. 실패하면 안내 문장, 성공하면 null
-async function sendFile(upload, file) {
-  if (upload.method === "blob") {
-    // Vercel Blob: 일회용 토큰으로 Blob 저장소에 직접 업로드 (우리 서버를 거치지 않음)
-    try {
-      const { put } = await import("@vercel/blob/client");
-      await put(upload.pathname, file, { access: "public", token: upload.token, contentType: upload.contentType });
-      return null;
-    } catch (error) {
-      console.error("Blob 업로드 실패", error);
-      return "파일을 올리지 못했습니다.";
-    }
-  }
-  const sent = await fetch(upload.url, { method: upload.method, headers: upload.headers, body: file });
-  if (sent.ok) return null;
-  const data = await sent.json().catch(() => ({}));
-  return data.errors?.[0] ?? "파일을 올리지 못했습니다.";
-}
 
 export default function MediaUploader() {
   const router = useRouter();
@@ -97,46 +78,16 @@ export default function MediaUploader() {
     for (const [index, p] of previews.entries()) {
       setProgress(`${index + 1}/${previews.length}`);
       try {
-        const file = await shrinkImage(p.file);
-
-        const permit = await fetch("/api/media", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ caption, region, videoType, contentType: file.type, size: file.size }),
-        });
-        const permitData = await permit.json().catch(() => ({}));
-        if (!permit.ok) {
-          failed.push({ preview: p, error: permitData.errors?.[0] ?? "업로드를 시작하지 못했습니다." });
-          // 횟수 제한에 걸리면 나머지도 실패하므로 중단
-          if (permit.status === 429) {
-            failed.push(...previews.slice(index + 1).map((rest) => ({ preview: rest, error: null })));
-            break;
-          }
-          continue;
-        }
-
-        const { upload, token } = permitData;
-        const sentError = await sendFile(upload, file);
-        if (sentError) {
-          failed.push({ preview: p, error: sentError });
-          continue;
-        }
-
-        const published = await fetch("/api/media", {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        });
-        if (!published.ok) {
-          const data = await published.json().catch(() => ({}));
-          failed.push({ preview: p, error: data.errors?.[0] ?? "게시하지 못했습니다." });
-          continue;
-        }
-
+        await uploadFile(p.file, { caption, region, videoType });
         URL.revokeObjectURL(p.url);
         done += 1;
-      } catch {
-        failed.push({ preview: p, error: "네트워크 문제로 업로드하지 못했습니다." });
+      } catch (error) {
+        failed.push({ preview: p, error: error instanceof UploadFailure ? error.message : "네트워크 문제로 업로드하지 못했습니다." });
+        // 횟수 제한에 걸리면 나머지도 실패하므로 중단
+        if (error?.status === 429) {
+          failed.push(...previews.slice(index + 1).map((rest) => ({ preview: rest, error: null })));
+          break;
+        }
       }
     }
 

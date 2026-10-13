@@ -2,8 +2,8 @@
 // 스키마를 바꾼 뒤에는 `npm run db:migrate`로 마이그레이션을 만들고 클라이언트를 다시 생성하세요.
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider               = "prisma-client"
+  output                 = "../generated/prisma"
   // Node가 ESM으로 바로 읽을 수 있게 .mts로 생성
   generatedFileExtension = "mts"
   importFileExtension    = "mts"
@@ -106,7 +106,7 @@ model CourseStop {
 }
 
 model TravelLog {
-  id        String   @id @default(cuid())
+  id        String      @id @default(cuid())
   title     String
   region    String
   companion String
@@ -114,15 +114,17 @@ model TravelLog {
   excerpt   String
   // 문단은 빈 줄(\n\n)로 구분
   body      String
-  tips      Json     @default("[]")
-  likes     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  tips      Json        @default("[]")
+  likes     Int         @default(0)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
   courseId  String?
-  course    Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  course    Course?     @relation(fields: [courseId], references: [id], onDelete: SetNull)
   comments  Comment[]
+  // 로그에 첨부된 사진 (로그를 지우면 함께 삭제)
+  photos    MediaItem[]
 
   @@index([createdAt])
   @@index([authorId, createdAt])
@@ -130,7 +132,7 @@ model TravelLog {
 }
 
 model MediaItem {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   // photo | video | shorts
   type      String
   caption   String
@@ -142,14 +144,19 @@ model MediaItem {
   mimeType  String?
   size      Int?
   duration  String?
-  likes     Int      @default(0)
-  createdAt DateTime @default(now())
+  likes     Int        @default(0)
+  createdAt DateTime   @default(now())
   authorId  String
-  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  author    User       @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  // 로그 작성 화면에서 올렸지만 아직 로그에 연결되지 않은 사진. 목록·검색·통계에는 나오지 않음
+  draft     Boolean    @default(false)
+  logId     String?
+  log       TravelLog? @relation(fields: [logId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
   @@index([type, createdAt])
   @@index([authorId, createdAt])
+  @@index([logId])
 }
 
 // 여행 로그 댓글

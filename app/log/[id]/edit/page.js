@@ -42,7 +42,12 @@ export default async function EditLogPage({ params }) {
         ← 로그로 돌아가기
       </Link>
       <h1 className="text-2xl font-bold">여행 로그 수정</h1>
-      <LogForm action={updateLog.bind(null, id)} initialValues={initialValues} submitLabel="수정 완료" />
+      <LogForm
+        action={updateLog.bind(null, id)}
+        initialValues={initialValues}
+        initialPhotos={log.photos.map((p) => ({ id: p.id, src: p.src, name: p.caption }))}
+        submitLabel="수정 완료"
+      />
     </div>
   );
 }

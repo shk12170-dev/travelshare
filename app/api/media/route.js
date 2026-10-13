@@ -35,10 +35,16 @@ export async function POST(request) {
   const videoType = body.videoType === "shorts" ? "shorts" : "video";
   const mimeType = String(body.contentType ?? "").toLowerCase();
   const size = Number(body.size);
+  // 로그 작성 화면에서 올리는 임시 사진: 설명·지역은 로그를 저장할 때 로그의 값으로 채워짐 (사진만 허용)
+  const draft = body.draft === true;
 
-  if (!caption) return fail(400, "설명을 입력하세요.");
-  if (caption.length > UPLOAD_LIMITS.captionMax) return fail(400, `설명은 ${UPLOAD_LIMITS.captionMax}자 이하로 입력하세요.`);
-  if (!regions.includes(region)) return fail(400, "지역을 선택하세요.");
+  if (draft) {
+    if (!mimeType.startsWith("image/")) return fail(400, "로그에는 사진만 첨부할 수 있습니다.");
+  } else {
+    if (!caption) return fail(400, "설명을 입력하세요.");
+    if (caption.length > UPLOAD_LIMITS.captionMax) return fail(400, `설명은 ${UPLOAD_LIMITS.captionMax}자 이하로 입력하세요.`);
+    if (!regions.includes(region)) return fail(400, "지역을 선택하세요.");
+  }
 
   const limit = await hit("upload", user.id);
   if (!limit.ok) return fail(429, limitMessage(limit.retryAfterSec));
@@ -50,8 +56,9 @@ export async function POST(request) {
       uid: user.id,
       mime: mimeType,
       type: mimeType.startsWith("image/") ? "photo" : videoType,
-      caption,
-      region,
+      caption: draft ? "여행 사진" : caption,
+      region: draft ? "기타" : region,
+      draft,
     });
     // 로컬 방식은 우리 서버의 업로드 주소를 사용
     if (!upload.url) upload.url = `/api/media/upload/${encodeURIComponent(token)}`;
@@ -88,6 +95,7 @@ export async function PUT(request) {
         mimeType: payload.mime,
         size,
         authorId: user.id,
+        draft: payload.draft === true,
       },
       select: { id: true },
     });

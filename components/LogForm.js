@@ -2,16 +2,19 @@
 
 import { useActionState, useState } from "react";
 import FormField, { FormError, inputClass } from "./FormField";
+import LogPhotoPicker from "./LogPhotoPicker";
 import { companions, regions } from "@/data/options";
 import { LOG_LIMITS, validateLog } from "@/lib/validation";
 
 const emptyForm = { title: "", region: "", companion: "", body: "", tips: "" };
 
 // action: createLog 또는 updateLog.bind(null, id) 같은 서버 액션
-export default function LogForm({ action, initialValues = emptyForm, submitLabel = "작성 완료" }) {
+// initialPhotos: 수정 화면에서 이미 첨부된 사진
+export default function LogForm({ action, initialValues = emptyForm, initialPhotos = [], submitLabel = "작성 완료" }) {
   const [state, formAction, pending] = useActionState(action, { errors: {} });
   const [form, setForm] = useState(initialValues);
   const [clientErrors, setClientErrors] = useState(null);
+  const [uploading, setUploading] = useState(false);
 
   // 브라우저 검사 결과가 있으면 우선 표시하고, 없으면 서버 검사 결과를 표시
   const errors = clientErrors ?? state.errors;
@@ -87,12 +90,14 @@ export default function LogForm({ action, initialValues = emptyForm, submitLabel
         />
       </FormField>
 
+      <LogPhotoPicker initialPhotos={initialPhotos} onBusyChange={setUploading} />
+
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || uploading}
         className="self-start rounded-full bg-brand px-6 py-2.5 text-sm font-semibold text-white disabled:opacity-60 dark:text-slate-900"
       >
-        {pending ? "저장 중..." : submitLabel}
+        {pending ? "저장 중..." : uploading ? "사진 올리는 중..." : submitLabel}
       </button>
     </form>
   );
