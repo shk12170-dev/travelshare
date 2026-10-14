@@ -24,7 +24,7 @@
 - Next.js 16 (App Router), React 19
 - Tailwind CSS 4
 - Prisma 7 + SQLite(개발) / Turso(배포), libSQL 어댑터
-- Cloudflare R2(배포 시 사진·영상 저장), Vercel(호스팅)
+- Vercel Blob(기본 사진·영상 저장소), Cloudflare R2(선택), Vercel(호스팅)
 - Better Auth (이메일·비밀번호 로그인)
 - ESLint 9
 
@@ -70,13 +70,13 @@ npm run dev
 | `npm test` | 단위 테스트 (Vitest) |
 | `npm run test:e2e` | 브라우저 E2E·접근성 테스트 (Playwright). 먼저 `npm run build` 필요 |
 
-## 배포 (Vercel + Turso + Cloudflare R2, 무료 범위)
+## 배포 (Vercel + Turso + Vercel Blob, 무료 범위)
 
-서버리스 구조라 서버를 직접 관리하지 않습니다. 구성: **Vercel**(앱) + **Turso**(DB) + **Cloudflare R2**(사진·영상).
-계정 가입과 키 발급은 각 서비스에서 직접 해야 합니다.
+서버리스 구조라 서버를 직접 관리하지 않습니다. 기본 구성은 **Vercel**(앱) + **Turso**(DB) + **Vercel Blob**(사진·영상)입니다.
+Cloudflare R2도 선택해 연결할 수 있으며, R2 설정이 있으면 Blob보다 우선 사용합니다. 계정 가입과 키 발급은 각 서비스에서 직접 해야 합니다.
 
 > **주의**: Vercel 무료(Hobby) 플랜은 **비상업적·개인 용도**만 허용합니다. 광고·결제 등 수익 활동을 하려면 유료 플랜이 필요합니다.
-> R2는 가입할 때 결제 수단 등록이 필요할 수 있습니다(무료 범위 안에서는 청구되지 않음).
+> Vercel Hobby는 비상업 용도 전용입니다. Cloudflare R2를 선택하면 결제 수단 등록이 필요할 수 있습니다.
 
 ### 1. Turso 만들기
 1. https://turso.tech 가입 → 데이터베이스 생성 (위치는 도쿄 `aws-ap-northeast-1` 권장)
@@ -124,11 +124,11 @@ Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭�
 
 ### 4. Vercel 배포
 1. https://vercel.com 가입 → GitHub 저장소(`travelshare`) 가져오기
-2. Environment Variables에 `.env`의 `TURSO_*`, `R2_*`와 아래 값을 추가
+2. Environment Variables에 `.env`의 `TURSO_*`, 기본 저장소인 `BLOB_READ_WRITE_TOKEN`과 아래 값을 추가합니다. R2를 선택한 경우에만 `R2_*`도 추가합니다.
    - `BETTER_AUTH_SECRET`: 32자 이상 무작위 값 (`node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`)
    - (선택) `RESEND_API_KEY`, `MAIL_FROM`, 소셜 로그인 키
 3. Deploy. 사이트 주소(예: `https://travelshare-shk.vercel.app`)는 자동으로 인식됩니다(`BETTER_AUTH_URL` 불필요).
-4. 배포된 주소를 R2의 CORS `AllowedOrigins`에 넣기
+4. R2를 선택한 경우에만 배포 주소를 R2의 CORS `AllowedOrigins`에 넣습니다. Vercel Blob은 별도 CORS 설정이 필요하지 않습니다.
 5. 코드를 GitHub에 push하면 자동으로 다시 배포됩니다. DB 구조를 바꿨다면 push 전에 `npm run db:migrate:remote`를 먼저 실행하세요.
 
 ### PC와 배포 환경의 구분 (실제 데이터 보호)
@@ -138,15 +138,15 @@ Turso 접속·테이블, R2 업로드·형식 제한·복사·Range 읽기·삭�
 
 ### 외부 서비스를 연결하지 않았을 때
 - **메일(Resend)이 없으면**: 비밀번호 찾기 화면이 "메일 발송을 연결하지 않았다"는 안내로 바뀌고 로그인 화면의 링크도 숨겨집니다.
-- **R2가 없으면(Vercel)**: 미디어 화면에 "사진·영상 올리기는 준비 중" 안내가 나옵니다. 둘러보기 등 다른 기능은 그대로 동작합니다.
+- **Blob과 R2가 모두 없으면(Vercel)**: 미디어 화면에 "사진·영상 올리기는 준비 중" 안내가 나옵니다. 둘러보기 등 다른 기능은 그대로 동작합니다.
 - 모든 화면 위에 "과제 제출용 데모 사이트" 안내가 표시됩니다(`components/DemoNotice.js`).
 
 ### 운영 중 알아 둘 것
-- **백업**: `npm run db:backup:remote`는 Turso DB 전체를 SQL 파일로 내려받습니다(`backups/db/`). 사진·영상은 R2가 보관합니다.
+- **백업**: `npm run db:backup:remote`는 Turso DB 전체를 SQL 파일로 내려받습니다(`backups/db/`). 사진·영상은 연결한 저장소(Vercel Blob 또는 Cloudflare R2)에 보관됩니다.
   Turso 무료 플랜의 복구 기능(하루 전까지)도 있지만 별도로 주기적으로 백업해 두세요.
 - **횟수 제한**은 DB에 기록되어 여러 서버가 나뉘어 돌아도 함께 적용됩니다. IP 확인에는 Vercel이 붙이는 `X-Forwarded-For`를 사용합니다.
 - **영상**은 변환 없이 원본 그대로 보여 주며 20MB까지입니다(무료 저장소 1GB 고려). 사진은 브라우저에서 긴 변 2048px로 줄여 올립니다(위치 정보도 제거됨).
-- **무료 한도**: R2 저장 10GB·읽기 월 1,000만 회, Turso 저장 5GB·읽기 월 5억 행, Vercel 전송 월 100GB. 한도에 가까워지면 각 대시보드에서 확인하세요.
+- **무료 한도**: 저장소별 한도가 다릅니다. Vercel Blob은 위 한도를, Cloudflare R2는 저장 10GB·읽기 월 1,000만 회를 적용합니다. Turso는 저장 5GB·읽기 월 5억 행, Vercel 전송은 월 100GB입니다. 한도에 가까워지면 각 대시보드에서 확인하세요.
 
 ## 운영 시 알아 둘 것 (자체 서버로 운영하는 경우)
 

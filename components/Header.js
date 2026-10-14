@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import { navItems, isActive } from "./navItems";
 import { signOut } from "@/app/(auth)/actions";
 
-export default function Header({ user }) {
+export default function Header({ user, unreadNotifications = 0 }) {
   const pathname = usePathname();
   const loginHref = pathname === "/" || pathname === "/login" ? "/login" : `/login?next=${encodeURIComponent(pathname)}`;
 
@@ -44,7 +44,19 @@ export default function Header({ user }) {
           </Link>
           {user ? (
             <div className="flex items-center gap-2 text-sm">
-              <Link href="/profile" className="max-w-28 truncate font-medium">
+              <Link
+                href="/notifications"
+                aria-label={unreadNotifications > 0 ? `알림, 새 알림 ${unreadNotifications}개` : "알림"}
+                className="relative flex h-9 w-9 items-center justify-center rounded-full text-base hover:bg-brand-soft"
+              >
+                <span aria-hidden>🔔</span>
+                {unreadNotifications > 0 && (
+                  <span aria-hidden className="absolute right-0 top-0 min-w-4 rounded-full bg-brand px-1 text-center text-[10px] font-bold leading-4 text-white dark:text-slate-900">
+                    {unreadNotifications > 9 ? "9+" : unreadNotifications}
+                  </span>
+                )}
+              </Link>
+              <Link href="/profile" className="hidden max-w-28 truncate font-medium sm:block">
                 {user.nickname}
               </Link>
               <form action={signOut}>

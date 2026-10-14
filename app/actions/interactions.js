@@ -13,6 +13,11 @@ const likeTargets = {
   media: (tx) => tx.mediaItem,
 };
 
+async function notify({ type, actorId, recipientId, targetType, targetId }) {
+  if (!recipientId || recipientId === actorId) return;
+  await prisma.notification.create({ data: { type, actorId, recipientId, targetType, targetId } });
+}
+
 // 좋아요 누르기/취소. 결과: { liked, likes } 또는 { error }
 export async function toggleLike(targetType, targetId) {
   const user = await getCurrentUser();
@@ -24,7 +29,10 @@ export async function toggleLike(targetType, targetId) {
 
   try {
     return await prisma.$transaction(async (tx) => {
-      const target = await model(tx).findUnique({ where: { id: targetId }, select: { id: true } });
+      const target = await model(tx).findUnique({
+        where: { id: targetId },
+        select: targetType === "course" ? { id: true } : { id: true, authorId: true },
+      });
       if (!target) return { error: "삭제되었거나 없는 항목입니다." };
 
       const key = { userId_targetType_targetId: { userId: user.id, targetType, targetId } };
@@ -39,6 +47,11 @@ export async function toggleLike(targetType, targetId) {
         data: { likes: { increment: existing ? -1 : 1 } },
         select: { likes: true },
       });
+      if (!existing && target.authorId && target.authorId !== user.id) {
+        await tx.notification.create({
+          data: { type: "like", actorId: user.id, recipientId: target.authorId, targetType, targetId },
+        });
+      }
       return { liked: !existing, likes: Math.max(0, updated.likes) };
     });
   } catch (error) {
@@ -62,8 +75,14 @@ export async function toggleFollow(targetUserId) {
 
     const key = { followerId_followingId: { followerId: user.id, followingId: targetUserId } };
     const existing = await prisma.follow.findUnique({ where: key });
-    if (existing) await prisma.follow.delete({ where: key });
-    else await prisma.follow.create({ data: { followerId: user.id, followingId: targetUserId } });
+    if (existing) {
+      await prisma.follow.delete({ where: key });
+    } else {
+      await prisma.$transaction([
+        prisma.follow.create({ data: { followerId: user.id, followingId: targetUserId } }),
+        prisma.notification.create({ data: { type: "follow", actorId: user.id, recipientId: targetUserId } }),
+      ]);
+    }
     const followers = await prisma.follow.count({ where: { followingId: targetUserId } });
     return { following: !existing, followers };
   } catch (error) {
@@ -71,6 +90,28 @@ export async function toggleFollow(targetUserId) {
     console.error("팔로우 처리 실패", error);
     return { error: "잠시 후 다시 시도하세요." };
   }
+}
+
+// 알림은 본인 것만 읽음 처리한다. 클라이언트에서 전달한 ID만 믿지 않고 수신자 조건을 함께 확인한다.
+export async function markNotificationRead(notificationId) {
+  const user = await getCurrentUser();
+  if (!user || typeof notificationId !== "string") return;
+
+  await prisma.notification.updateMany({
+    where: { id: notificationId, recipientId: user.id, readAt: null },
+    data: { readAt: new Date() },
+  });
+  revalidatePath("/", "layout");
+  revalidatePath("/notifications");
+}
+
+export async function markAllNotificationsRead() {
+  const user = await getCurrentUser();
+  if (!user) return;
+
+  await prisma.notification.updateMany({ where: { recipientId: user.id, readAt: null }, data: { readAt: new Date() } });
+  revalidatePath("/", "layout");
+  revalidatePath("/notifications");
 }
 
 // 사용: addComment.bind(null, logId)
@@ -91,6 +132,14 @@ export async function addComment(logId, prevState, formData) {
   await prisma.comment.create({
     data: { body: body.trim().slice(0, COMMENT_LIMITS.max), logId, authorId: user.id },
   });
+  const logAuthor = await prisma.travelLog.findUnique({ where: { id: logId }, select: { authorId: true } });
+  if (logAuthor && logAuthor.authorId !== user.id) {
+    try {
+      await notify({ type: "comment", actorId: user.id, recipientId: logAuthor.authorId, targetType: "log", targetId: logId });
+    } catch (notificationError) {
+      console.error("댓글 알림 생성 실패", notificationError);
+    }
+  }
   revalidatePath(`/log/${logId}`);
   return { error: null, body: "", savedAt: Date.now() };
 }

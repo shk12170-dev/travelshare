@@ -3,6 +3,7 @@ import Header from "@/components/Header";
 import BottomNav from "@/components/BottomNav";
 import DemoNotice from "@/components/DemoNotice";
 import { getCurrentUser } from "@/lib/session";
+import { getUnreadNotificationCount } from "@/lib/queries";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -25,6 +26,7 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
   const user = await getCurrentUser();
+  const unreadNotifications = user ? await getUnreadNotificationCount(user.id) : 0;
 
   return (
     <html
@@ -40,7 +42,7 @@ export default async function RootLayout({ children }) {
           본문으로 건너뛰기
         </a>
         <DemoNotice />
-        <Header user={user} />
+        <Header user={user} unreadNotifications={unreadNotifications} />
         <main id="main" tabIndex={-1} className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-6 outline-none md:pb-12">
           {children}
         </main>

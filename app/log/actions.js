@@ -77,6 +77,23 @@ export async function createLog(prevState, formData) {
     return { errors: { form: "저장 중 문제가 발생했습니다. 잠시 후 다시 시도하세요." }, values };
   }
 
+  try {
+    const followers = await prisma.follow.findMany({ where: { followingId: user.id }, select: { followerId: true }, take: 500 });
+    if (followers.length > 0) {
+      await prisma.notification.createMany({
+        data: followers.map(({ followerId }) => ({
+          type: "log",
+          actorId: user.id,
+          recipientId: followerId,
+          targetType: "log",
+          targetId: log.id,
+        })),
+      });
+    }
+  } catch (error) {
+    console.error("새 로그 알림 생성 실패", error);
+  }
+
   // redirect는 예외로 동작하므로 try 블록 밖에서 호출
   // 첨부 사진 연결과 오래된 임시 사진 정리. 실패해도 로그 저장은 유지
   try {

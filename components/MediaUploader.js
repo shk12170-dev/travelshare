@@ -34,7 +34,7 @@ export default function MediaUploader() {
     const nextErrors = [];
     const accepted = [];
     for (const file of fileList) {
-      const error = validateMediaFile(file);
+      const error = validateMediaFile(file, { allowVideoTranscode: true });
       if (error) nextErrors.push(`${file.name}: ${error}`);
       else accepted.push(file);
     }
@@ -78,7 +78,9 @@ export default function MediaUploader() {
     for (const [index, p] of previews.entries()) {
       setProgress(`${index + 1}/${previews.length}`);
       try {
-        await uploadFile(p.file, { caption, region, videoType });
+        await uploadFile(p.file, { caption, region, videoType }, {
+          onTransform: (active) => setProgress(`${index + 1}/${previews.length}${active ? " · 영상 변환 중" : ""}`),
+        });
         URL.revokeObjectURL(p.url);
         done += 1;
       } catch (error) {
@@ -110,7 +112,7 @@ export default function MediaUploader() {
         <div>
           <h2 className="font-bold">내 미디어 올리기</h2>
           <p className="text-xs text-muted">
-            사진 {UPLOAD_LIMITS.imageMB}MB, 영상 {UPLOAD_LIMITS.videoMB}MB 이하 · 최대 {UPLOAD_LIMITS.maxFiles}개
+            사진 {UPLOAD_LIMITS.imageMB}MB, 영상 원본 {UPLOAD_LIMITS.videoSourceMB}MB 이하(변환 후 {UPLOAD_LIMITS.videoMB}MB) · 최대 {UPLOAD_LIMITS.maxFiles}개
           </p>
         </div>
         <label className="cursor-pointer rounded-full bg-brand px-4 py-2 text-sm font-semibold text-white dark:text-slate-900">
