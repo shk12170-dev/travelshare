@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { regions } from "@/data/options";
 import { UploadFailure, uploadFile } from "@/lib/uploadClient";
-import { UPLOAD_LIMITS, allowedMimeTypes, validateMediaFile } from "@/lib/validation";
+import { UPLOAD_LIMITS, allowedMimeTypes, normalizedMediaMime, validateMediaFile } from "@/lib/validation";
 
 const accept = Object.keys(allowedMimeTypes).join(",");
 
@@ -45,7 +45,7 @@ export default function MediaUploader() {
       id: `${file.name}-${file.lastModified}-${Math.random()}`,
       file,
       name: file.name,
-      isVideo: file.type.startsWith("video/"),
+      isVideo: normalizedMediaMime(file).startsWith("video/"),
       url: URL.createObjectURL(file),
     }));
     setPreviews((prev) => [...prev, ...added]);
