@@ -20,7 +20,7 @@ export default async function NotificationsPage() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">알림</h1>
-          <p className="mt-1 text-sm text-muted">나를 팔로우한 여행자를 확인하세요.</p>
+          <p className="mt-1 text-sm text-muted">팔로우·댓글·좋아요·새 여행 로그 소식을 확인하세요.</p>
         </div>
         {unreadCount > 0 && (
           <form action={markAllNotificationsRead}>

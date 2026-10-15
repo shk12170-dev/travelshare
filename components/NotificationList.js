@@ -24,7 +24,9 @@ function notificationText(notification) {
 
 function notificationHref(notification) {
   if (notification.targetType === "log" && notification.targetId) return `/log/${notification.targetId}`;
-  if (notification.type === "follow") return `/log?author=${encodeURIComponent(notification.actorId)}`;
+  if ((notification.type === "follow" || notification.type === "log") && notification.actorId) {
+    return `/log?author=${encodeURIComponent(notification.actorId)}`;
+  }
   if (notification.targetType === "media") return "/media";
   return "/log";
 }
